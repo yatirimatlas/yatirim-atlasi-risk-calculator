@@ -1,494 +1,203 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Yatırım Atlası - Profesyonel yatırımcı risk profili hesaplayıcı">
-    <title>Risk Profili Hesaplayıcı | Yatırım Atlası</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: #f8f9fa;
-        }
-        #root {
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .radar-chart {
-            width: 100%;
-            height: 400px;
-            position: relative;
-        }
-        canvas {
-            max-width: 100%;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Risk Profili Hesaplayıcı | Yatırım Atlası</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Profesyonel yatırımcı risk profili hesaplayıcı" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+
+  <style>
+    body { background:#f8f9fa }
+  </style>
 </head>
+
 <body>
-    <div id="root">
-        <div style="text-align: center; padding: 50px;">
-            <h2>Yükleniyor...</h2>
-            <p>Lütfen bekleyin</p>
+<div class="max-w-3xl mx-auto p-6">
+
+  <div id="app"></div>
+
+</div>
+
+<script>
+/* ---------------- DATA ---------------- */
+
+const sections = [
+  {
+    title: "Risk Alma Kapasitesi",
+    weight: 0.20,
+    questions: [
+      "Geçici %30 kaybı tolere edebilir misiniz?",
+      "1 yıl negatif getiri sizin için?",
+      "Yüksek volatiliteye yaklaşımınız?",
+      "Yüksek riskli yatırımlar?",
+      "Piyasa düşüşlerinde davranış?"
+    ]
+  },
+  {
+    title: "Finansal Dayanıklılık",
+    weight: 0.15,
+    questions: [
+      "Gelir kesilirse kaç ay?",
+      "Borç / gelir oranı?",
+      "Portföy likiditesi?",
+      "Beklenmedik harcama etkisi?",
+      "Gelirin ne kadarı riskte?"
+    ]
+  },
+  {
+    title: "Bilgi & Deneyim",
+    weight: 0.15,
+    questions: [
+      "Yatırım deneyimi?",
+      "Ürün çeşitliliği?",
+      "Diversifikasyon bilgisi?",
+      "Makro analiz seviyesi?",
+      "Risk-getiri yönetimi?"
+    ]
+  },
+  {
+    title: "Psikolojik Dayanıklılık",
+    weight: 0.20,
+    questions: [
+      "Stres seviyesi?",
+      "Zarar sonrası davranış?",
+      "Haber akışı etkisi?",
+      "Kayıpta aksiyon?",
+      "Psikolojik güç?"
+    ]
+  },
+  {
+    title: "Zaman Ufku",
+    weight: 0.15,
+    questions: [
+      "Yatırım süresi?",
+      "Ana yatırım amacı?",
+      "Geçici kayıplar?",
+      "Nakit akışı önemi?",
+      "Plana sadakat?"
+    ]
+  },
+  {
+    title: "Volatilite Yönetimi",
+    weight: 0.15,
+    questions: [
+      "Sert hareketler?",
+      "Volatilite algısı?",
+      "Stop-loss kullanımı?",
+      "Dalgalı piyasalar?",
+      "Belirsizlikte karar?"
+    ]
+  }
+];
+
+const profiles = [
+  { min:0, max:39, name:"Koruyucu", color:"bg-blue-500" },
+  { min:40, max:54, name:"Dengeli", color:"bg-green-500" },
+  { min:55, max:69, name:"Büyüme Odaklı", color:"bg-yellow-500" },
+  { min:70, max:84, name:"Agresif", color:"bg-orange-500" },
+  { min:85, max:100, name:"Profesyonel", color:"bg-red-500" }
+];
+
+/* ---------------- STATE ---------------- */
+
+let current = 0;
+let answers = {};
+
+/* ---------------- UI ---------------- */
+
+const app = document.getElementById("app");
+
+function render() {
+  const section = sections[current];
+
+  app.innerHTML = `
+    <div class="bg-white p-6 rounded-xl shadow">
+      <h1 class="text-2xl font-bold mb-2">Yatırımcı Risk Profili</h1>
+      <p class="text-gray-600 mb-6">${current+1} / ${sections.length} — ${section.title}</p>
+
+      ${section.questions.map((q,i)=>`
+        <div class="mb-5">
+          <p class="font-medium mb-2">${q}</p>
+          <div class="flex gap-2">
+            ${[1,2,3,4,5].map(v=>`
+              <button
+                onclick="answer(${current},${i},${v})"
+                class="px-3 py-2 rounded border
+                ${answers[`${current}-${i}`]==v ? 'bg-blue-600 text-white' : 'bg-white'}">
+                ${v}
+              </button>
+            `).join("")}
+          </div>
         </div>
+      `).join("")}
+
+      <div class="flex justify-between mt-6">
+        <button onclick="prev()" class="px-4 py-2 bg-gray-300 rounded">← Önceki</button>
+        ${
+          current === sections.length-1
+          ? `<button onclick="showResult()" class="px-6 py-2 bg-green-600 text-white rounded">Sonuç</button>`
+          : `<button onclick="next()" class="px-6 py-2 bg-blue-600 text-white rounded">Sonraki →</button>`
+        }
+      </div>
     </div>
+  `;
+}
 
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
-    
-    <!-- Recharts -->
-    <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
+function answer(s,q,v){ answers[`${s}-${q}`]=v; render(); }
+function next(){ current++; render(); }
+function prev(){ current--; render(); }
 
-    <script>
-        // Wait for all libraries to load
-        window.addEventListener('load', function() {
-            const { useState, createElement: h } = React;
-            const { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } = Recharts;
+/* ---------------- RESULT ---------------- */
 
-            const RiskProfileCalculator = () => {
-              const [currentSection, setCurrentSection] = useState(0);
-              const [answers, setAnswers] = useState({});
-              const [showResults, setShowResults] = useState(false);
+function showResult(){
+  const scores = sections.map((s,si)=>{
+    const vals = s.questions.map((_,qi)=>answers[`${si}-${qi}`]||0);
+    return (vals.reduce((a,b)=>a+b,0) / (s.questions.length*5)) * 100;
+  });
 
-              const questions = [
-                {
-                  section: "Risk Alma Kapasitesi",
-                  weight: 0.20,
-                  questions: [
-                    {
-                      id: "q1_1",
-                      text: "Toplam finansal varlıklarınızın ne kadarlık bir bölümünde %30 ve üzeri geçici değer kaybını tolere edebilirsiniz?",
-                      options: ["%0–10", "%10–20", "%20–30", "%30–40", "%40+"]
-                    },
-                    {
-                      id: "q1_2",
-                      text: "Yatırım portföyünüzün bir yıl boyunca negatif getiri üretmesi sizin için ne ölçüde kabul edilebilir?",
-                      options: ["Hiç", "Zor", "Kısmen", "Kabul edilebilir", "Normal"]
-                    },
-                    {
-                      id: "q1_3",
-                      text: "Kaldıraç veya yüksek volatilite içeren araçlara yaklaşımınız nedir?",
-                      options: ["Kesinlikle kaçınırım", "Nadiren", "Kontrollü", "Aktif", "Profesyonelce kullanırım"]
-                    },
-                    {
-                      id: "q1_4",
-                      text: "Yüksek getiri potansiyeli olan ancak yüksek kayıp riski içeren yatırımlar hakkında düşünceniz:",
-                      options: ["Kaçınılmalı", "Çok sınırlı", "Dengeli", "Portföy parçası", "Ana strateji"]
-                    },
-                    {
-                      id: "q1_5",
-                      text: "Büyük piyasa düşüşlerinde yatırım kararlarınızı genellikle nasıl alırsınız?",
-                      options: ["Duygusal", "Kısa vadeli", "Bekle-gör", "Analitik", "Stratejik"]
-                    }
-                  ]
-                },
-                {
-                  section: "Finansal Dayanıklılık & Likidite",
-                  weight: 0.15,
-                  questions: [
-                    {
-                      id: "q2_1",
-                      text: "Düzenli gelirinizin kesilmesi durumunda mevcut yaşam standartlarınızı kaç ay sürdürebilirsiniz?",
-                      options: ["<1 ay", "1–3 ay", "3–6 ay", "6–12 ay", "12+ ay"]
-                    },
-                    {
-                      id: "q2_2",
-                      text: "Toplam borçlarınızın yıllık gelirinize oranı nedir?",
-                      options: ["%75+", "%50–75", "%25–50", "%10–25", "%0–10"]
-                    },
-                    {
-                      id: "q2_3",
-                      text: "Yatırım portföyünüzün ne kadarı kısa sürede nakde çevrilebilir?",
-                      options: ["%0–20", "%20–40", "%40–60", "%60–80", "%80+"]
-                    },
-                    {
-                      id: "q2_4",
-                      text: "Beklenmedik büyük bir harcama (sağlık, iş kaybı vb.) yatırım kararlarınızı ne kadar etkiler?",
-                      options: ["Çok", "Fazla", "Orta", "Az", "Hiç"]
-                    },
-                    {
-                      id: "q2_5",
-                      text: "Yatırım yaparken gelirinizin hangi kısmını riske edebilirsiniz?",
-                      options: ["%0–5", "%5–10", "%10–20", "%20–30", "%30+"]
-                    }
-                  ]
-                },
-                {
-                  section: "Bilgi Seviyesi & Piyasa Deneyimi",
-                  weight: 0.15,
-                  questions: [
-                    {
-                      id: "q3_1",
-                      text: "Aktif yatırım deneyiminiz kaç yıldır?",
-                      options: ["Yok", "<1", "1–3", "3–5", "5+"]
-                    },
-                    {
-                      id: "q3_2",
-                      text: "Daha önce yatırım yaptığınız ürünler hangilerini kapsıyor?",
-                      options: ["Mevduat", "Fon", "Hisse", "Kripto/Emtia", "Türev/Opsiyon"]
-                    },
-                    {
-                      id: "q3_3",
-                      text: "Portföy çeşitlendirme kavramını nasıl uyguluyorsunuz?",
-                      options: ["Bilmem", "Kısıtlı", "Temel", "Bilinçli", "Stratejik"]
-                    },
-                    {
-                      id: "q3_4",
-                      text: "Makroekonomik verilerin yatırımlarınıza etkisini ne ölçüde analiz ediyorsunuz?",
-                      options: ["Hiç", "Nadiren", "Bazen", "Çoğunlukla", "Sistematik"]
-                    },
-                    {
-                      id: "q3_5",
-                      text: "Risk–getiri ilişkisini pratikte ne kadar iyi yönetebildiğinizi düşünüyorsunuz?",
-                      options: ["Zayıf", "Gelişiyor", "Orta", "İyi", "Çok iyi"]
-                    }
-                  ]
-                },
-                {
-                  section: "Davranışsal & Psikolojik Dayanıklılık",
-                  weight: 0.20,
-                  questions: [
-                    {
-                      id: "q4_1",
-                      text: "Sert piyasa düşüşlerinde stres seviyeniz genellikle nasıl olur?",
-                      options: ["Çok yüksek", "Yüksek", "Orta", "Düşük", "Çok düşük"]
-                    },
-                    {
-                      id: "q4_2",
-                      text: "Zarar sonrası yatırım kararlarınız:",
-                      options: ["Panik", "Duygusal", "Kararsız", "Mantıklı", "Disiplinli"]
-                    },
-                    {
-                      id: "q4_3",
-                      text: "Sosyal medya, haber akışı ve yorumlar kararlarınızı ne kadar etkiler?",
-                      options: ["Çok", "Fazla", "Orta", "Az", "Hiç"]
-                    },
-                    {
-                      id: "q4_4",
-                      text: "Kayıp yaşadığınız bir pozisyonda ne yaparsınız?",
-                      options: ["Hemen çıkarım", "Çoğunu satarım", "Beklerim", "Plan uygularım", "Strateji güçlendiririm"]
-                    },
-                    {
-                      id: "q4_5",
-                      text: "Kendinizi yatırım psikolojisi açısından nasıl tanımlarsınız?",
-                      options: ["Zayıf", "Dalgalı", "Dengeli", "Güçlü", "Çok güçlü"]
-                    }
-                  ]
-                },
-                {
-                  section: "Zaman Ufku & Yatırım Amacı",
-                  weight: 0.15,
-                  questions: [
-                    {
-                      id: "q5_1",
-                      text: "Yatırımlarınız için ortalama zaman ufkunuz nedir?",
-                      options: ["<1 yıl", "1–3", "3–5", "5–10", "10+"]
-                    },
-                    {
-                      id: "q5_2",
-                      text: "Yatırım amacınız öncelikle nedir?",
-                      options: ["Sermaye koruma", "Gelir", "Dengeli", "Büyüme", "Maksimum büyüme"]
-                    },
-                    {
-                      id: "q5_3",
-                      text: "Uzun vadeli geçici kayıplara yaklaşımınız:",
-                      options: ["Kabul edilemez", "Zor", "Katlanırım", "Normal", "Fırsat"]
-                    },
-                    {
-                      id: "q5_4",
-                      text: "Portföyünüzde temettü / nakit akışı ne kadar önemli?",
-                      options: ["Çok", "Önemli", "Dengeli", "İkincil", "Önemsiz"]
-                    },
-                    {
-                      id: "q5_5",
-                      text: "Yatırım planınıza ne kadar sadıksınız?",
-                      options: ["Plansız", "Esnek", "Kısmen", "Disiplinli", "Sistematik"]
-                    }
-                  ]
-                },
-                {
-                  section: "Volatilite & Strateji Yönetimi",
-                  weight: 0.15,
-                  questions: [
-                    {
-                      id: "q6_1",
-                      text: "Günlük / haftalık sert fiyat hareketleri sizi nasıl etkiler?",
-                      options: ["Olumsuz", "Rahatsız", "Nötr", "Alışığım", "Olumlu"]
-                    },
-                    {
-                      id: "q6_2",
-                      text: "Volatilite sizin için daha çok:",
-                      options: ["Risk", "Tehdit", "Normal", "Fırsat", "Avantaj"]
-                    },
-                    {
-                      id: "q6_3",
-                      text: "Stop-loss ve risk yönetimi araçlarını kullanma seviyeniz:",
-                      options: ["Hiç", "Nadiren", "Bazen", "Çoğu zaman", "Sistematik"]
-                    },
-                    {
-                      id: "q6_4",
-                      text: "Dalgalı piyasalarda pozisyon alma yaklaşımınız:",
-                      options: ["Kaçınırım", "Çok sınırlı", "Seçici", "Aktif", "Profesyonel"]
-                    },
-                    {
-                      id: "q6_5",
-                      text: "Piyasa belirsizliği altında karar alma becerinizi nasıl değerlendirirsiniz?",
-                      options: ["Zayıf", "Gelişiyor", "Orta", "Güçlü", "Çok güçlü"]
-                    }
-                  ]
-                }
-              ];
+  const total = Math.round(scores.reduce((t,s,i)=>t + s*sections[i].weight,0));
+  const profile = profiles.find(p=>total>=p.min && total<=p.max);
 
-              const profiles = [
-                {
-                  name: "Koruyucu Yatırımcı",
-                  range: [0, 39],
-                  color: "bg-blue-500",
-                  icon: "🟦",
-                  summary: "Sermaye korunumu sizin için getiriden daha öncelikli. Finansal ve psikolojik açıdan riskli dalgalanmalardan kaçınmayı tercih ediyorsunuz.",
-                  strengths: ["Düşük stres", "Nakit yönetiminde disiplin", "Uzun süreli kayıplardan kaçınma"],
-                  challenges: ["Enflasyon karşısında reel getiri", "Uzun vadede fırsat maliyeti"],
-                  strategy: ["Mevduat, düşük riskli fonlar", "Temettü odaklı varlıklar", "Düşük volatilite"],
-                  quote: "Önce sermaye, sonra getiri."
-                },
-                {
-                  name: "Dengeli Yatırımcı",
-                  range: [40, 54],
-                  color: "bg-green-500",
-                  icon: "🟩",
-                  summary: "Risk ve getiriyi dengeleyen, duygusal kararları sınırlı, portföy çeşitlendirmesine önem veren bir yatırımcısınız.",
-                  strengths: ["Dengeli karar alma", "Makro veriye kısmi duyarlılık", "Orta vadeli bakış"],
-                  challenges: ["Sert piyasa kırılmaları", "Fırsatları erken kaçırma"],
-                  strategy: ["Hisse + fon dengesi", "Gayrimenkul / kira getirisi", "Orta vadeli büyüme"],
-                  quote: "Dengeyi koruyarak büyümek."
-                },
-                {
-                  name: "Büyüme Odaklı Yatırımcı",
-                  range: [55, 69],
-                  color: "bg-yellow-500",
-                  icon: "🟨",
-                  summary: "Getiri odaklısınız, volatiliteyi kabul ediyorsunuz ve uzun vadeli büyümeyi önceliklendiriyorsunuz.",
-                  strengths: ["Zaman ufku uzun", "Piyasa dalgalanmalarına dayanıklı", "Fırsatları değerlendirebilme"],
-                  challenges: ["Aşırı iyimser dönemlerde risk birikimi", "Konsantrasyon riski"],
-                  strategy: ["Hisse senedi ağırlıklı portföy", "Teknoloji, büyüme temaları", "Uzun vadeli yatırımlar"],
-                  quote: "Dalgalanma yolun bir parçasıdır."
-                },
-                {
-                  name: "Agresif / Aktif Yatırımcı",
-                  range: [70, 84],
-                  color: "bg-orange-500",
-                  icon: "🟧",
-                  summary: "Yüksek risk toleransına, güçlü psikolojik dayanıklılığa ve aktif piyasa takibine sahipsiniz.",
-                  strengths: ["Volatilite yönetimi", "Hızlı karar alma", "Aktif risk yönetimi"],
-                  challenges: ["Aşırı işlem (overtrading)", "Duygusal yıpranma"],
-                  strategy: ["Aktif trade", "Kripto, emtia, tematik yatırımlar", "Risk yönetimi + stop-loss"],
-                  quote: "Risk yönetildiğinde fırsata dönüşür."
-                },
-                {
-                  name: "Profesyonel / Stratejik Yatırımcı",
-                  range: [85, 100],
-                  color: "bg-red-500",
-                  icon: "🟥",
-                  summary: "Piyasa döngülerini okuyan, makro veriye dayalı, sistematik ve disiplinli bir yatırım yaklaşımına sahipsiniz.",
-                  strengths: ["Stratejik düşünme", "Davranışsal hatalara direnç", "Portföy optimizasyonu"],
-                  challenges: ["Aşırı karmaşıklık", "Getiri beklentisinin yükselmesi"],
-                  strategy: ["Çoklu varlık sınıfı", "Risk parity / faktör yatırımı", "Uzun vadeli sermaye büyümesi"],
-                  quote: "Yatırım bir oyun değil, sistemdir."
-                }
-              ];
+  app.innerHTML = `
+    <div class="bg-white p-6 rounded-xl shadow">
+      <h1 class="text-3xl font-bold text-center mb-2">${total} / 100</h1>
+      <p class="text-center text-xl mb-6">${profile.name} Yatırımcı</p>
 
-              const handleAnswer = (questionId, value) => {
-                setAnswers({ ...answers, [questionId]: value });
-              };
+      <canvas id="radar" height="350"></canvas>
 
-              const calculateResults = () => {
-                const categoryScores = questions.map((section) => {
-                  const sectionAnswers = section.questions.map(q => answers[q.id] || 0);
-                  const sectionTotal = sectionAnswers.reduce((sum, val) => sum + val, 0);
-                  const sectionMax = section.questions.length * 5;
-                  const normalizedScore = (sectionTotal / sectionMax) * 100;
-                  return {
-                    category: section.section,
-                    score: normalizedScore,
-                    weight: section.weight
-                  };
-                });
+      <div class="text-center mt-6">
+        <button onclick="location.reload()" class="px-6 py-2 bg-gray-700 text-white rounded">
+          Yeniden Başla
+        </button>
+      </div>
+    </div>
+  `;
 
-                const totalScore = categoryScores.reduce((sum, cat) => sum + (cat.score * cat.weight), 0);
-                
-                const profile = profiles.find(p => totalScore >= p.range[0] && totalScore <= p.range[1]) || profiles[0];
+  new Chart(document.getElementById("radar"), {
+    type: "radar",
+    data: {
+      labels: sections.map(s=>s.title),
+      datasets: [{
+        label: "Risk Haritası",
+        data: scores,
+        fill: true,
+        backgroundColor: "rgba(37,99,235,0.2)",
+        borderColor: "#2563eb"
+      }]
+    },
+    options: {
+      scales: { r: { min:0, max:100, ticks:{stepSize:20} } }
+    }
+  });
+}
 
-                return { totalScore: Math.round(totalScore), categoryScores, profile };
-              };
-
-              const handleSubmit = () => {
-                const allAnswered = questions.every(section => 
-                  section.questions.every(q => answers[q.id] !== undefined)
-                );
-                
-                if (!allAnswered) {
-                  alert("Lütfen tüm soruları cevaplayın.");
-                  return;
-                }
-                
-                setShowResults(true);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              };
-
-              const resetQuiz = () => {
-                setAnswers({});
-                setCurrentSection(0);
-                setShowResults(false);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              };
-
-              if (showResults) {
-                const { totalScore, categoryScores, profile } = calculateResults();
-                
-                const radarData = [
-                  { category: "Risk Toleransı", value: categoryScores[0].score },
-                  { category: "Finansal Dayanıklılık", value: categoryScores[1].score },
-                  { category: "Deneyim & Bilgi", value: categoryScores[2].score },
-                  { category: "Psikolojik Dayanıklılık", value: categoryScores[3].score },
-                  { category: "Zaman Ufku", value: categoryScores[4].score },
-                  { category: "Volatilite Yönetimi", value: categoryScores[5].score }
-                ];
-
-                return h('div', { className: "max-w-5xl mx-auto p-6 bg-white rounded-lg shadow-lg" },
-                  h('div', { className: "text-center mb-8" },
-                    h('h1', { className: "text-3xl font-bold text-gray-800 mb-2" }, "Risk Profili Sonuçlarınız"),
-                    h('div', { className: "text-6xl font-bold text-blue-600 mb-2" }, totalScore),
-                    h('div', { className: "text-xl text-gray-600" }, "/ 100")
-                  ),
-                  h('div', { className: `${profile.color} text-white p-6 rounded-lg mb-8` },
-                    h('div', { className: "text-4xl mb-3" }, profile.icon),
-                    h('h2', { className: "text-2xl font-bold mb-3" }, profile.name),
-                    h('p', { className: "text-lg mb-4" }, profile.summary),
-                    h('div', { className: "bg-white bg-opacity-20 p-4 rounded italic" },
-                      h('p', { className: "text-lg font-semibold" }, "📌 Yatırım Atlası Yorumu:"),
-                      h('p', { className: "text-xl" }, `"${profile.quote}"`)
-                    )
-                  ),
-                  h('div', { className: "mb-8" },
-                    h('h3', { className: "text-xl font-bold text-gray-800 mb-4" }, "Risk Profili Haritanız"),
-                    h(ResponsiveContainer, { width: "100%", height: 400 },
-                      h(RadarChart, { data: radarData },
-                        h(PolarGrid, null),
-                        h(PolarAngleAxis, { dataKey: "category", tick: { fill: '#374151', fontSize: 12 } }),
-                        h(PolarRadiusAxis, { angle: 90, domain: [0, 100] }),
-                        h(Radar, { name: "Skorunuz", dataKey: "value", stroke: "#3b82f6", fill: "#3b82f6", fillOpacity: 0.6 })
-                      )
-                    )
-                  ),
-                  h('div', { className: "grid md:grid-cols-3 gap-6 mb-8" },
-                    h('div', { className: "bg-green-50 p-5 rounded-lg" },
-                      h('h3', { className: "text-lg font-bold text-green-800 mb-3" }, "✓ Güçlü Yanlar"),
-                      h('ul', { className: "space-y-2" },
-                        ...profile.strengths.map((s, i) => h('li', { key: i, className: "text-green-700" }, `• ${s}`))
-                      )
-                    ),
-                    h('div', { className: "bg-yellow-50 p-5 rounded-lg" },
-                      h('h3', { className: "text-lg font-bold text-yellow-800 mb-3" }, "⚠ Zorlanabileceği Alanlar"),
-                      h('ul', { className: "space-y-2" },
-                        ...profile.challenges.map((c, i) => h('li', { key: i, className: "text-yellow-700" }, `• ${c}`))
-                      )
-                    ),
-                    h('div', { className: "bg-blue-50 p-5 rounded-lg" },
-                      h('h3', { className: "text-lg font-bold text-blue-800 mb-3" }, "→ Uygun Strateji"),
-                      h('ul', { className: "space-y-2" },
-                        ...profile.strategy.map((s, i) => h('li', { key: i, className: "text-blue-700" }, `• ${s}`))
-                      )
-                    )
-                  ),
-                  h('div', { className: "text-center" },
-                    h('button', {
-                      onClick: resetQuiz,
-                      className: "bg-gray-700 text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition"
-                    }, "Yeniden Başla")
-                  )
-                );
-              }
-
-              const currentSectionData = questions[currentSection];
-              const progress = ((currentSection + 1) / questions.length) * 100;
-
-              return h('div', { className: "max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-lg" },
-                h('div', { className: "mb-8" },
-                  h('h1', { className: "text-3xl font-bold text-gray-800 mb-2" }, "Yatırımcı Risk Profili"),
-                  h('p', { className: "text-gray-600" }, "6 kategori, 30 soru ile risk profilinizi keşfedin")
-                ),
-                h('div', { className: "mb-6" },
-                  h('div', { className: "flex justify-between text-sm text-gray-600 mb-2" },
-                    h('span', null, "İlerleme"),
-                    h('span', null, `${currentSection + 1} / ${questions.length}`)
-                  ),
-                  h('div', { className: "w-full bg-gray-200 rounded-full h-3" },
-                    h('div', {
-                      className: "bg-blue-600 h-3 rounded-full transition-all duration-300",
-                      style: { width: `${progress}%` }
-                    })
-                  )
-                ),
-                h('div', { className: "bg-blue-50 p-6 rounded-lg mb-6" },
-                  h('h2', { className: "text-2xl font-bold text-gray-800 mb-4" },
-                    `${currentSection + 1}️⃣ ${currentSectionData.section}`
-                  )
-                ),
-                h('div', { className: "space-y-8" },
-                  ...currentSectionData.questions.map((question) =>
-                    h('div', { key: question.id, className: "bg-gray-50 p-5 rounded-lg" },
-                      h('p', { className: "text-gray-800 font-medium mb-4" }, question.text),
-                      h('div', { className: "space-y-2" },
-                        ...question.options.map((option, optIdx) =>
-                          h('label', {
-                            key: optIdx,
-                            className: `flex items-center p-3 rounded-lg cursor-pointer transition ${
-                              answers[question.id] === optIdx + 1 
-                                ? 'bg-blue-100 border-2 border-blue-500' 
-                                : 'bg-white border-2 border-gray-200 hover:border-blue-300'
-                            }`
-                          },
-                            h('input', {
-                              type: "radio",
-                              name: question.id,
-                              checked: answers[question.id] === optIdx + 1,
-                              onChange: () => handleAnswer(question.id, optIdx + 1),
-                              className: "mr-3"
-                            }),
-                            h('span', { className: "text-gray-700" }, option)
-                          )
-                        )
-                      )
-                    )
-                  )
-                ),
-                h('div', { className: "flex justify-between mt-8" },
-                  h('button', {
-                    onClick: () => setCurrentSection(Math.max(0, currentSection - 1)),
-                    disabled: currentSection === 0,
-                    className: "px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-400 transition"
-                  }, "← Önceki"),
-                  currentSection === questions.length - 1
-                    ? h('button', {
-                        onClick: handleSubmit,
-                        className: "px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition"
-                      }, "Sonuçları Gör →")
-                    : h('button', {
-                        onClick: () => setCurrentSection(Math.min(questions.length - 1, currentSection + 1)),
-                        className: "px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
-                      }, "Sonraki →")
-                )
-              );
-            };
-
-            ReactDOM.render(React.createElement(RiskProfileCalculator), document.getElementById('root'));
-        });
-    </script>
+render();
+</script>
 </body>
 </html>
