@@ -9,20 +9,34 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-  body {
-    background: #f3f4f6;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  html, body {
+    margin:0;
+    padding:0;
+    background:#f3f4f6;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    overflow-x:hidden;
   }
 </style>
 </head>
 
 <body>
 
-<div class="min-h-screen flex justify-center px-4 py-10">
+<!-- min-h-screen KALDIRILDI -->
+<div class="flex justify-center px-4 py-10">
   <div id="app" class="w-full max-w-xl"></div>
 </div>
 
 <script>
+
+/* ---------------- AUTO HEIGHT FOR WIX ---------------- */
+
+function sendHeight(){
+  const height = document.documentElement.scrollHeight;
+  window.parent.postMessage(height,"*");
+}
+
+window.addEventListener("load", sendHeight);
+window.addEventListener("resize", sendHeight);
 
 /* ---------------- DATA ---------------- */
 
@@ -44,11 +58,11 @@ const questions = [
 ];
 
 const profiles = [
-  { min:0,max:39,name:"Koruyucu",color:"bg-blue-600"},
-  { min:40,max:54,name:"Dengeli",color:"bg-green-600"},
-  { min:55,max:69,name:"Büyüme Odaklı",color:"bg-yellow-500"},
-  { min:70,max:84,name:"Agresif",color:"bg-orange-500"},
-  { min:85,max:100,name:"Profesyonel",color:"bg-red-600"}
+  { min:0,max:39,name:"Koruyucu"},
+  { min:40,max:54,name:"Dengeli"},
+  { min:55,max:69,name:"Büyüme Odaklı"},
+  { min:70,max:84,name:"Agresif"},
+  { min:85,max:100,name:"Profesyonel"}
 ];
 
 /* ---------------- STATE ---------------- */
@@ -121,6 +135,8 @@ function render(){
 
   </div>
   `;
+
+  sendHeight();
 }
 
 /* ---------------- ANSWER ---------------- */
@@ -174,6 +190,8 @@ function showResult(){
       </button>
     </div>
   `;
+
+  sendHeight();
 
   new Chart(document.getElementById("radar"),{
     type:"radar",
