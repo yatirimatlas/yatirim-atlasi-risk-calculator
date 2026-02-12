@@ -9,51 +9,29 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-html,body{
-  margin:0;
-  padding:0;
-  background:#f3f4f6;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-  overflow-x:hidden; /* ÖNEMLİ: iframe iç scroll kapanır */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #f3f4f6;
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  overflow-x: hidden;
 }
-.fade-in{animation:fade .4s ease-in-out;}
-@keyframes fade{
-from{opacity:0;transform:translateY(8px)}
-to{opacity:1;transform:translateY(0)}
+.fade-in {
+  animation: fade .4s ease-in-out;
+}
+@keyframes fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
 </head>
 <body>
 
-<div class="flex justify-center px-4 py-8">
+<div class="flex justify-center px-4 py-10 min-h-screen">
   <div id="app" class="w-full max-w-3xl"></div>
 </div>
 
 <script>
-
-/* ---------- WIX AUTO HEIGHT (GELİŞMİŞ) ---------- */
-function sendHeight(){
-  const height = document.body.scrollHeight;
-
-  window.parent.postMessage(
-    {
-      type: "resize",
-      height: height
-    },
-    "*"
-  );
-}
-
-window.addEventListener("load", () => {
-  setTimeout(sendHeight, 300);
-});
-
-window.addEventListener("resize", sendHeight);
-
-const observer = new ResizeObserver(() => {
-  sendHeight();
-});
-observer.observe(document.body);
 
 /* ---------- DATA ---------- */
 
@@ -115,10 +93,10 @@ questions:[
 ];
 
 const profiles=[
-{min:30,max:75,name:"Koruma Odaklı",color:"bg-blue-600"},
-{min:76,max:110,name:"Dengeli",color:"bg-emerald-600"},
-{min:111,max:150,name:"Büyüme Odaklı",color:"bg-amber-600"},
-{min:151,max:180,name:"Agresif",color:"bg-red-600"}
+{min:30,max:75,name:"Koruma Odaklı"},
+{min:76,max:110,name:"Dengeli"},
+{min:111,max:150,name:"Büyüme Odaklı"},
+{min:151,max:180,name:"Agresif"}
 ];
 
 /* ---------- STATE ---------- */
@@ -129,7 +107,7 @@ let currentUser=null;
 
 const app=document.getElementById("app");
 
-/* ---------- LOGIN SCREEN ---------- */
+/* ---------- LOGIN ---------- */
 
 function showLogin(){
 app.innerHTML=`
@@ -148,7 +126,6 @@ Giriş Yap
 </button>
 </div>
 `;
-sendHeight();
 }
 
 function login(){
@@ -171,7 +148,7 @@ showResult();
 }
 }
 
-/* ---------- QUIZ RENDER ---------- */
+/* ---------- QUIZ ---------- */
 
 function renderQuiz(){
 
@@ -209,8 +186,6 @@ ${currentSection===sections.length-1?'Sonucu Gör':'İleri'}
 </div>
 </div>
 `;
-
-sendHeight();
 }
 
 function answer(s,i,v){
@@ -287,8 +262,6 @@ Testi Sıfırla
 </button>
 </div>
 `;
-
-sendHeight();
 }
 
 function resetAll(){
