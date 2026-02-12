@@ -3,222 +3,264 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Yatırımcı Risk Profili | Yatırım Atlası</title>
+<title>Risk Profili Hesaplayıcı | Yatırım Atlası</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-  html, body {
-    margin:0;
-    padding:0;
-    background:#f3f4f6;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    overflow-x:hidden;
-  }
+html,body{
+  margin:0;
+  padding:0;
+  background:#f3f4f6;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  overflow-x:hidden;
+}
+.fade-in{
+  animation:fade .5s ease-in-out;
+}
+@keyframes fade{
+  from{opacity:0; transform:translateY(10px)}
+  to{opacity:1; transform:translateY(0)}
+}
 </style>
 </head>
-
 <body>
 
-<!-- min-h-screen KALDIRILDI -->
 <div class="flex justify-center px-4 py-10">
-  <div id="app" class="w-full max-w-xl"></div>
+  <div id="app" class="w-full max-w-3xl"></div>
 </div>
 
 <script>
 
-/* ---------------- AUTO HEIGHT FOR WIX ---------------- */
-
+/* ---------------- WIX AUTO HEIGHT ---------------- */
 function sendHeight(){
-  const height = document.documentElement.scrollHeight;
-  window.parent.postMessage(height,"*");
+  const h = document.documentElement.scrollHeight;
+  window.parent.postMessage(h,"*");
 }
-
 window.addEventListener("load", sendHeight);
 window.addEventListener("resize", sendHeight);
 
 /* ---------------- DATA ---------------- */
 
 const sections = [
-  { title:"Risk Alma Kapasitesi", weight:0.20 },
-  { title:"Finansal Dayanıklılık", weight:0.15 },
-  { title:"Bilgi & Deneyim", weight:0.15 },
-  { title:"Psikolojik Dayanıklılık", weight:0.20 },
-  { title:"Zaman Ufku", weight:0.15 },
-  { title:"Volatilite Yönetimi", weight:0.15 }
+{
+title:"Risk Algısı",
+questions:[
+"Piyasa %20 düştüğünde pozisyonumu koruyabilirim.",
+"Yatırımda geçici zararlar beni paniğe sürüklemez.",
+"Dalgalı piyasalarda karar almakta zorlanmam.",
+"Portföyüm kısa sürede değer kaybederse sakin kalırım.",
+"Belirsizlik dönemlerinde yatırım yapabilirim."
+]},
+{
+title:"Volatilite Toleransı",
+questions:[
+"Yüksek getiri için yüksek oynaklığı kabul ederim.",
+"Günlük fiyat değişimleri beni rahatsız etmez.",
+"Portföyümde riskli varlık bulundurabilirim.",
+"Agresif yatırım araçlarına açığım.",
+"Kısa vadeli sert hareketler beni caydırmaz."
+]},
+{
+title:"Zaman Ufku",
+questions:[
+"Yatırımlarımı uzun vadeli planlarım.",
+"En az 5 yıl dokunmadan yatırım yapabilirim.",
+"Kısa vadeli kazanç yerine uzun vadeli büyümeyi seçerim.",
+"Sabırlı bir yatırımcıyım.",
+"Uzun süreli belirsizliğe dayanabilirim."
+]},
+{
+title:"Finansal Dayanıklılık",
+questions:[
+"Acil durum fonum mevcut.",
+"Yatırım zararları yaşam standartımı bozmaz.",
+"Borçluluk oranım düşük.",
+"Gelirim düzenli ve sürdürülebilir.",
+"Likidite ihtiyacım düşüktür."
+]},
+{
+title:"Bilgi ve Deneyim",
+questions:[
+"Finansal piyasalar hakkında bilgiliyim.",
+"Daha önce yatırım deneyimim oldu.",
+"Farklı varlık türlerini anlıyorum.",
+"Risk-getiri dengesini biliyorum.",
+"Piyasa analizlerini takip ederim."
+]},
+{
+title:"Davranışsal Eğilim",
+questions:[
+"Sürü psikolojisinden etkilenmem.",
+"Panik satış yapmam.",
+"Aşırı özgüvenli kararlar almam.",
+"Duygularımı yatırım kararına yansıtmam.",
+"Stratejime sadık kalırım."
+]}
 ];
 
-const questions = [
-  "Geçici %30 kaybı tolere edebilir misiniz?",
-  "1 yıl negatif getiri sizin için?",
-  "Yüksek volatiliteye yaklaşımınız?",
-  "Yüksek riskli yatırımlar?",
-  "Piyasa düşüşlerinde davranış?"
+const profiles=[
+{min:30,max:75,name:"Koruma Odaklı",color:"bg-blue-600",
+desc:"Sermayeyi koruma önceliklidir.",
+strength:"Düşük risk, sabit gelir araçları",
+attention:"Aşırı muhafazakârlık getiri potansiyelini sınırlayabilir"},
+{min:76,max:110,name:"Dengeli",color:"bg-emerald-600",
+desc:"Risk ve getiri dengesi gözetilir.",
+strength:"Çeşitlendirilmiş portföy",
+attention:"Dalgalı dönemlerde disiplin korunmalı"},
+{min:111,max:150,name:"Büyüme Odaklı",color:"bg-amber-600",
+desc:"Uzun vadeli yüksek büyüme hedeflenir.",
+strength:"Yüksek getiri potansiyeli",
+attention:"Volatilite yönetimi kritik"},
+{min:151,max:180,name:"Agresif",color:"bg-red-600",
+desc:"Yüksek risk, yüksek getiri yaklaşımı.",
+strength:"Maksimum büyüme hedefi",
+attention:"Sermaye kaybı riski yüksek"}
 ];
 
-const profiles = [
-  { min:0,max:39,name:"Koruyucu"},
-  { min:40,max:54,name:"Dengeli"},
-  { min:55,max:69,name:"Büyüme Odaklı"},
-  { min:70,max:84,name:"Agresif"},
-  { min:85,max:100,name:"Profesyonel"}
-];
+let currentSection=0;
+let answers={};
 
-/* ---------------- STATE ---------------- */
-
-let current = 0;
-let answers = {};
-
-const app = document.getElementById("app");
+const app=document.getElementById("app");
 
 /* ---------------- RENDER ---------------- */
 
 function render(){
 
-  const progress = ((current+1)/sections.length)*100;
+sendHeight();
 
-  app.innerHTML = `
-  <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
+if(currentSection<sections.length){
 
-    <div class="mb-6">
-      <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
-        Yatırımcı Risk Profili
-      </h1>
-      <p class="text-gray-500 mt-1">
-        ${current+1} / ${sections.length} — ${sections[current].title}
-      </p>
+const section=sections[currentSection];
 
-      <div class="w-full bg-gray-200 rounded-full h-2 mt-4">
-        <div class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-          style="width:${progress}%"></div>
-      </div>
-  <div class="flex justify-between text-xs text-gray-500 mt-3">
-  <span>1 — Hiç rahat değilim</span>
-  <span>5 — Son derece rahatım</span>
+app.innerHTML=`
+<div class="bg-white shadow-xl rounded-3xl p-8 fade-in">
+<h1 class="text-2xl font-bold mb-2">Risk Profili Analizi</h1>
+<p class="text-gray-500 mb-6">${section.title} (${currentSection+1}/${sections.length})</p>
+
+<div class="space-y-6">
+${section.questions.map((q,i)=>`
+<div>
+<p class="mb-2 font-medium">${q}</p>
+<div class="flex justify-between text-xs text-gray-400 mb-1">
+<span>Hiç rahat değilim</span>
+<span>Son derece rahatım</span>
 </div>
-    </div>
+<div class="flex gap-2">
+${[1,2,3,4,5].map(v=>`
+<button onclick="answer(${currentSection},${i},${v})"
+class="flex-1 py-2 rounded-xl border ${answers[`${currentSection}-${i}`]==v?'bg-black text-white':'bg-white'}">
+${v}
+</button>`).join("")}
+</div>
+</div>`).join("")}
+</div>
 
-    ${questions.map((q,i)=>`
-      <div class="mb-6">
-        <p class="font-medium text-gray-800 mb-3 text-sm sm:text-base">${q}</p>
-        <div class="grid grid-cols-5 gap-2">
-          ${[1,2,3,4,5].map(v=>`
-            <button
-              onclick="answer(${current},${i},${v})"
-              class="py-2 rounded-lg text-sm font-medium border transition
-              ${answers[`${current}-${i}`]==v
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-gray-50 border-gray-300 hover:border-blue-400'}
-              ">
-              ${v}
-            </button>
-          `).join("")}
-        </div>
-      </div>
-    `).join("")}
+<div class="mt-8 flex justify-between">
+<button onclick="prev()" class="px-5 py-2 bg-gray-200 rounded-xl">Geri</button>
+<button onclick="next()" class="px-5 py-2 bg-black text-white rounded-xl">
+${currentSection===sections.length-1?'Sonucu Gör':'İleri'}
+</button>
+</div>
+</div>
+`;
 
-    <div class="flex justify-between mt-8">
-      <button onclick="prev()"
-        class="px-5 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">
-        ← Önceki
-      </button>
-
-      ${
-        current === sections.length-1
-        ? `<button onclick="showResult()"
-            class="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700">
-            Sonuçları Gör
-          </button>`
-        : `<button onclick="next()"
-            class="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-            Sonraki →
-          </button>`
-      }
-    </div>
-
-  </div>
-  `;
-
-  sendHeight();
+}else{
+showResult();
 }
 
-/* ---------------- ANSWER ---------------- */
-
-function answer(s,q,v){
-  answers[`${s}-${q}`]=v;
-  render();
 }
 
-function next(){
-  window.scrollTo({top:0,behavior:"smooth"});
-  current++;
-  render();
+function answer(s,i,v){
+answers[`${s}-${i}`]=v;
+render();
 }
 
 function prev(){
-  window.scrollTo({top:0,behavior:"smooth"});
-  current--;
-  render();
+if(currentSection>0){currentSection--; render();}
+}
+
+function next(){
+const section=sections[currentSection];
+for(let i=0;i<section.questions.length;i++){
+if(!answers[`${currentSection}-${i}`]){
+alert("Tüm soruları yanıtlamalısınız.");
+return;
+}
+}
+currentSection++;
+render();
 }
 
 /* ---------------- RESULT ---------------- */
 
 function showResult(){
 
-  const scores = sections.map((s,si)=>{
-    let total=0;
-    for(let i=0;i<5;i++){
-      total += answers[`${si}-${i}`] || 0;
-    }
-    return (total/25)*100;
-  });
+let total=Object.values(answers).reduce((a,b)=>a+b,0);
 
-  const totalScore = Math.round(
-    scores.reduce((t,s,i)=> t + s*sections[i].weight ,0)
-  );
+let profile=profiles.find(p=>total>=p.min && total<=p.max);
 
-  const profile = profiles.find(p=>totalScore>=p.min && totalScore<=p.max);
+let categoryScores=sections.map((sec,si)=>{
+let sum=0;
+for(let i=0;i<sec.questions.length;i++){
+sum+=answers[`${si}-${i}`];
+}
+return Math.round(sum/5);
+});
 
-  app.innerHTML = `
-    <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center">
+app.innerHTML=`
+<div class="bg-white shadow-xl rounded-3xl p-8 fade-in">
+<h2 class="text-2xl font-bold mb-4">Sonuç</h2>
 
-      <h2 class="text-4xl font-bold text-gray-800">${totalScore}/100</h2>
-      <p class="text-xl mt-2 mb-6">${profile.name} Yatırımcı</p>
+<div class="${profile.color} text-white rounded-2xl p-6 mb-6">
+<h3 class="text-xl font-bold">${profile.name}</h3>
+<p class="opacity-90 mt-1">${profile.desc}</p>
+<p class="mt-3 text-sm"><strong>Güçlü Yön:</strong> ${profile.strength}</p>
+<p class="text-sm"><strong>Dikkat Alanı:</strong> ${profile.attention}</p>
+</div>
 
-      <canvas id="radar" class="mb-6"></canvas>
+<p class="mb-4 font-semibold">Toplam Skor: ${total} / 180</p>
 
-      <button onclick="location.reload()"
-        class="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-black">
-        Yeniden Başla
-      </button>
-    </div>
-  `;
+<canvas id="radarChart"></canvas>
 
-  sendHeight();
+<button onclick="restart()" class="mt-6 px-5 py-2 bg-black text-white rounded-xl">
+Tekrar Başla
+</button>
+</div>
+`;
 
-  new Chart(document.getElementById("radar"),{
-    type:"radar",
-    data:{
-      labels:sections.map(s=>s.title),
-      datasets:[{
-        data:scores,
-        backgroundColor:"rgba(37,99,235,0.2)",
-        borderColor:"#2563eb",
-        borderWidth:2
-      }]
-    },
-    options:{
-      responsive:true,
-      scales:{
-        r:{min:0,max:100,ticks:{stepSize:20}}
-      }
-    }
-  });
+const ctx=document.getElementById('radarChart');
+
+new Chart(ctx,{
+type:'radar',
+data:{
+labels:sections.map(s=>s.title),
+datasets:[{
+label:"Kategori Skoru",
+data:categoryScores,
+borderWidth:2,
+pointRadius:3
+}]
+},
+options:{
+scales:{
+r:{min:0,max:25}
+}
+}
+});
+
+sendHeight();
+}
+
+function restart(){
+currentSection=0;
+answers={};
+render();
 }
 
 render();
-</script>
 
+</script>
 </body>
 </html>
