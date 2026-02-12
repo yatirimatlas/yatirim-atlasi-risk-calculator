@@ -6,50 +6,97 @@
 <title>Risk Profili Analizi | Yatırım Atlası</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 html,body{
-  margin:0;
-  padding:0;
-  background:#f3f4f6;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-  overflow-x:hidden;
-}
-.fade-in{animation:fade .4s ease-in-out;}
-@keyframes fade{
-from{opacity:0;transform:translateY(8px)}
-to{opacity:1;transform:translateY(0)}
+margin:0;
+padding:0;
+background:#f3f4f6;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+overflow-x:hidden;
 }
 </style>
 </head>
 <body>
 
-<div class="flex justify-center px-4 py-10">
-  <div id="app" class="w-full max-w-3xl"></div>
+<div class="flex justify-center px-4 py-8">
+<div id="app" class="w-full max-w-3xl"></div>
 </div>
 
 <script>
 
-/* ---------- WIX HEIGHT ---------- */
+/* ---------- WIX AUTO HEIGHT ---------- */
 function sendHeight(){
-  window.parent.postMessage(document.documentElement.scrollHeight,"*");
+window.parent.postMessage(document.documentElement.scrollHeight,"*");
 }
 window.addEventListener("load",sendHeight);
 window.addEventListener("resize",sendHeight);
 
 /* ---------- DATA ---------- */
 
-const sections=[ /* önceki premium versiyondaki 6 section aynı kalabilir */ ];
-
-const profiles=[
-{min:30,max:75,name:"Koruma Odaklı",color:"bg-blue-600"},
-{min:76,max:110,name:"Dengeli",color:"bg-emerald-600"},
-{min:111,max:150,name:"Büyüme Odaklı",color:"bg-amber-600"},
-{min:151,max:180,name:"Agresif",color:"bg-red-600"}
+const sections=[
+{
+title:"Risk Algısı",
+questions:[
+"Piyasa %20 düştüğünde pozisyonumu koruyabilirim.",
+"Geçici zararlar beni paniğe sürüklemez.",
+"Dalgalı piyasalarda sakin kalırım.",
+"Portföy düşüşlerinde stratejimi bozmayarım.",
+"Belirsizlik dönemlerinde yatırım yapabilirim."
+]},
+{
+title:"Volatilite Toleransı",
+questions:[
+"Yüksek getiri için risk alabilirim.",
+"Günlük fiyat değişimleri beni rahatsız etmez.",
+"Agresif yatırım araçlarına açığım.",
+"Kısa vadeli kayıpları tolere edebilirim.",
+"Oynaklık fırsat yaratır."
+]},
+{
+title:"Zaman Ufku",
+questions:[
+"Yatırımlarımı uzun vadeli planlarım.",
+"En az 5 yıl yatırımda kalabilirim.",
+"Sabırlı bir yatırımcıyım.",
+"Kısa vadeli kazanç önceliğim değildir.",
+"Uzun süre bekleyebilirim."
+]},
+{
+title:"Finansal Dayanıklılık",
+questions:[
+"Acil durum fonum var.",
+"Borç oranım düşük.",
+"Gelirim düzenli.",
+"Yatırım zararları hayatımı etkilemez.",
+"Nakit ihtiyacım düşük."
+]},
+{
+title:"Bilgi ve Deneyim",
+questions:[
+"Piyasa bilgim var.",
+"Daha önce yatırım yaptım.",
+"Risk-getiri ilişkisini bilirim.",
+"Farklı varlık türlerini tanırım.",
+"Piyasa analizlerini takip ederim."
+]},
+{
+title:"Davranışsal Disiplin",
+questions:[
+"Panik satış yapmam.",
+"Sürü psikolojisinden etkilenmem.",
+"Stratejime sadık kalırım.",
+"Duygularımı kontrol ederim.",
+"Aşırı özgüvenli karar almam."
+]}
 ];
 
-/* ---------- STATE ---------- */
+const profiles=[
+{min:30,max:75,name:"Koruma Odaklı"},
+{min:76,max:110,name:"Dengeli"},
+{min:111,max:150,name:"Büyüme Odaklı"},
+{min:151,max:180,name:"Agresif"}
+];
 
 let currentSection=0;
 let answers={};
@@ -57,58 +104,17 @@ let currentUser=null;
 
 const app=document.getElementById("app");
 
-/* ---------- LOGIN SCREEN ---------- */
-
-function showLogin(){
-app.innerHTML=`
-<div class="bg-white shadow-xl rounded-3xl p-8 fade-in">
-<h2 class="text-2xl font-bold mb-4">Sonucu Görmek İçin Giriş Yapın</h2>
-
-<input id="name" placeholder="Ad Soyad"
-class="w-full mb-3 p-3 border rounded-xl"/>
-
-<input id="email" placeholder="Email"
-class="w-full mb-4 p-3 border rounded-xl"/>
-
-<button onclick="login()"
-class="w-full py-3 bg-black text-white rounded-xl">
-Giriş Yap
-</button>
-</div>
-`;
-sendHeight();
-}
-
-function login(){
-const name=document.getElementById("name").value.trim();
-const email=document.getElementById("email").value.trim();
-
-if(!name || !email){
-alert("Bilgileri doldurun.");
-return;
-}
-
-currentUser={name,email};
-localStorage.setItem("riskUser",JSON.stringify(currentUser));
-
-let saved=localStorage.getItem("riskResult_"+email);
-if(saved){
-showSavedResult(JSON.parse(saved));
-}else{
-showResult();
-}
-}
-
-/* ---------- QUIZ RENDER ---------- */
+/* ---------- QUIZ ---------- */
 
 function renderQuiz(){
 
 const section=sections[currentSection];
 
 app.innerHTML=`
-<div class="bg-white shadow-xl rounded-3xl p-8 fade-in">
-<h1 class="text-xl font-bold mb-2">${section.title}
-(${currentSection+1}/${sections.length})</h1>
+<div class="bg-white shadow-xl rounded-3xl p-8">
+<h2 class="text-xl font-bold mb-4">
+${section.title} (${currentSection+1}/${sections.length})
+</h2>
 
 <div class="space-y-5">
 ${section.questions.map((q,i)=>`
@@ -170,6 +176,33 @@ renderQuiz();
 }
 }
 
+/* ---------- LOGIN ---------- */
+
+function showLogin(){
+app.innerHTML=`
+<div class="bg-white shadow-xl rounded-3xl p-8">
+<h2 class="text-xl font-bold mb-4">Sonucu Görmek İçin Giriş Yapın</h2>
+<input id="name" placeholder="Ad Soyad"
+class="w-full mb-3 p-3 border rounded-xl"/>
+<input id="email" placeholder="Email"
+class="w-full mb-4 p-3 border rounded-xl"/>
+<button onclick="login()"
+class="w-full py-3 bg-black text-white rounded-xl">
+Giriş Yap
+</button>
+</div>
+`;
+sendHeight();
+}
+
+function login(){
+const name=document.getElementById("name").value.trim();
+const email=document.getElementById("email").value.trim();
+if(!name||!email){alert("Bilgileri doldurun.");return;}
+currentUser={name,email};
+showResult();
+}
+
 /* ---------- RESULT ---------- */
 
 function showResult(){
@@ -177,9 +210,9 @@ function showResult(){
 let total=Object.values(answers)
 .reduce((a,b)=>a+b,0);
 
-let profile=profiles.find(p=>total>=p.min && total<=p.max);
+let profile=profiles.find(p=>total>=p.min&&total<=p.max);
 
-const resultData={
+const data={
 name:currentUser.name,
 email:currentUser.email,
 total,
@@ -189,30 +222,22 @@ date:new Date().toISOString()
 
 localStorage.setItem(
 "riskResult_"+currentUser.email,
-JSON.stringify(resultData)
+JSON.stringify(data)
 );
 
-showSavedResult(resultData);
-}
-
-function showSavedResult(data){
-
 app.innerHTML=`
-<div class="bg-white shadow-xl rounded-3xl p-8 fade-in">
-<h2 class="text-2xl font-bold mb-3">Merhaba ${data.name}</h2>
+<div class="bg-white shadow-xl rounded-3xl p-8">
+<h2 class="text-2xl font-bold mb-4">
+Merhaba ${data.name}
+</h2>
 
-<div class="p-6 rounded-2xl bg-black text-white mb-6">
+<div class="p-6 bg-black text-white rounded-2xl mb-6">
 <h3 class="text-xl font-bold">${data.profile}</h3>
-<p class="mt-2">Toplam Skor: ${data.total}</p>
-<p class="text-sm opacity-70 mt-2">
-Oluşturulma: ${new Date(data.date).toLocaleDateString()}
-</p>
+<p class="mt-2">Toplam Skor: ${data.total} / 180</p>
 </div>
 
-<canvas id="chart"></canvas>
-
 <button onclick="resetAll()"
-class="mt-6 px-5 py-2 bg-red-500 text-white rounded-xl">
+class="px-5 py-2 bg-red-500 text-white rounded-xl">
 Testi Sıfırla
 </button>
 </div>
@@ -222,7 +247,6 @@ sendHeight();
 }
 
 function resetAll(){
-localStorage.removeItem("riskResult_"+currentUser.email);
 answers={};
 currentSection=0;
 renderQuiz();
@@ -230,18 +254,7 @@ renderQuiz();
 
 /* ---------- INIT ---------- */
 
-let savedUser=localStorage.getItem("riskUser");
-if(savedUser){
-currentUser=JSON.parse(savedUser);
-let saved=localStorage.getItem("riskResult_"+currentUser.email);
-if(saved){
-showSavedResult(JSON.parse(saved));
-}else{
 renderQuiz();
-}
-}else{
-renderQuiz();
-}
 
 </script>
 </body>
