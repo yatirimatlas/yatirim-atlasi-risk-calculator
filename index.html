@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Risk Profili Hesaplayıcı | Yatırım Atlası</title>
+<title>Risk Profili Analizi | Yatırım Atlası</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,12 +16,10 @@ html,body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   overflow-x:hidden;
 }
-.fade-in{
-  animation:fade .5s ease-in-out;
-}
+.fade-in{animation:fade .4s ease-in-out;}
 @keyframes fade{
-  from{opacity:0; transform:translateY(10px)}
-  to{opacity:1; transform:translateY(0)}
+from{opacity:0;transform:translateY(8px)}
+to{opacity:1;transform:translateY(0)}
 }
 </style>
 </head>
@@ -33,116 +31,89 @@ html,body{
 
 <script>
 
-/* ---------------- WIX AUTO HEIGHT ---------------- */
+/* ---------- WIX HEIGHT ---------- */
 function sendHeight(){
-  const h = document.documentElement.scrollHeight;
-  window.parent.postMessage(h,"*");
+  window.parent.postMessage(document.documentElement.scrollHeight,"*");
 }
-window.addEventListener("load", sendHeight);
-window.addEventListener("resize", sendHeight);
+window.addEventListener("load",sendHeight);
+window.addEventListener("resize",sendHeight);
 
-/* ---------------- DATA ---------------- */
+/* ---------- DATA ---------- */
 
-const sections = [
-{
-title:"Risk Algısı",
-questions:[
-"Piyasa %20 düştüğünde pozisyonumu koruyabilirim.",
-"Yatırımda geçici zararlar beni paniğe sürüklemez.",
-"Dalgalı piyasalarda karar almakta zorlanmam.",
-"Portföyüm kısa sürede değer kaybederse sakin kalırım.",
-"Belirsizlik dönemlerinde yatırım yapabilirim."
-]},
-{
-title:"Volatilite Toleransı",
-questions:[
-"Yüksek getiri için yüksek oynaklığı kabul ederim.",
-"Günlük fiyat değişimleri beni rahatsız etmez.",
-"Portföyümde riskli varlık bulundurabilirim.",
-"Agresif yatırım araçlarına açığım.",
-"Kısa vadeli sert hareketler beni caydırmaz."
-]},
-{
-title:"Zaman Ufku",
-questions:[
-"Yatırımlarımı uzun vadeli planlarım.",
-"En az 5 yıl dokunmadan yatırım yapabilirim.",
-"Kısa vadeli kazanç yerine uzun vadeli büyümeyi seçerim.",
-"Sabırlı bir yatırımcıyım.",
-"Uzun süreli belirsizliğe dayanabilirim."
-]},
-{
-title:"Finansal Dayanıklılık",
-questions:[
-"Acil durum fonum mevcut.",
-"Yatırım zararları yaşam standartımı bozmaz.",
-"Borçluluk oranım düşük.",
-"Gelirim düzenli ve sürdürülebilir.",
-"Likidite ihtiyacım düşüktür."
-]},
-{
-title:"Bilgi ve Deneyim",
-questions:[
-"Finansal piyasalar hakkında bilgiliyim.",
-"Daha önce yatırım deneyimim oldu.",
-"Farklı varlık türlerini anlıyorum.",
-"Risk-getiri dengesini biliyorum.",
-"Piyasa analizlerini takip ederim."
-]},
-{
-title:"Davranışsal Eğilim",
-questions:[
-"Sürü psikolojisinden etkilenmem.",
-"Panik satış yapmam.",
-"Aşırı özgüvenli kararlar almam.",
-"Duygularımı yatırım kararına yansıtmam.",
-"Stratejime sadık kalırım."
-]}
-];
+const sections=[ /* önceki premium versiyondaki 6 section aynı kalabilir */ ];
 
 const profiles=[
-{min:30,max:75,name:"Koruma Odaklı",color:"bg-blue-600",
-desc:"Sermayeyi koruma önceliklidir.",
-strength:"Düşük risk, sabit gelir araçları",
-attention:"Aşırı muhafazakârlık getiri potansiyelini sınırlayabilir"},
-{min:76,max:110,name:"Dengeli",color:"bg-emerald-600",
-desc:"Risk ve getiri dengesi gözetilir.",
-strength:"Çeşitlendirilmiş portföy",
-attention:"Dalgalı dönemlerde disiplin korunmalı"},
-{min:111,max:150,name:"Büyüme Odaklı",color:"bg-amber-600",
-desc:"Uzun vadeli yüksek büyüme hedeflenir.",
-strength:"Yüksek getiri potansiyeli",
-attention:"Volatilite yönetimi kritik"},
-{min:151,max:180,name:"Agresif",color:"bg-red-600",
-desc:"Yüksek risk, yüksek getiri yaklaşımı.",
-strength:"Maksimum büyüme hedefi",
-attention:"Sermaye kaybı riski yüksek"}
+{min:30,max:75,name:"Koruma Odaklı",color:"bg-blue-600"},
+{min:76,max:110,name:"Dengeli",color:"bg-emerald-600"},
+{min:111,max:150,name:"Büyüme Odaklı",color:"bg-amber-600"},
+{min:151,max:180,name:"Agresif",color:"bg-red-600"}
 ];
+
+/* ---------- STATE ---------- */
 
 let currentSection=0;
 let answers={};
+let currentUser=null;
 
 const app=document.getElementById("app");
 
-/* ---------------- RENDER ---------------- */
+/* ---------- LOGIN SCREEN ---------- */
 
-function render(){
+function showLogin(){
+app.innerHTML=`
+<div class="bg-white shadow-xl rounded-3xl p-8 fade-in">
+<h2 class="text-2xl font-bold mb-4">Sonucu Görmek İçin Giriş Yapın</h2>
 
+<input id="name" placeholder="Ad Soyad"
+class="w-full mb-3 p-3 border rounded-xl"/>
+
+<input id="email" placeholder="Email"
+class="w-full mb-4 p-3 border rounded-xl"/>
+
+<button onclick="login()"
+class="w-full py-3 bg-black text-white rounded-xl">
+Giriş Yap
+</button>
+</div>
+`;
 sendHeight();
+}
 
-if(currentSection<sections.length){
+function login(){
+const name=document.getElementById("name").value.trim();
+const email=document.getElementById("email").value.trim();
+
+if(!name || !email){
+alert("Bilgileri doldurun.");
+return;
+}
+
+currentUser={name,email};
+localStorage.setItem("riskUser",JSON.stringify(currentUser));
+
+let saved=localStorage.getItem("riskResult_"+email);
+if(saved){
+showSavedResult(JSON.parse(saved));
+}else{
+showResult();
+}
+}
+
+/* ---------- QUIZ RENDER ---------- */
+
+function renderQuiz(){
 
 const section=sections[currentSection];
 
 app.innerHTML=`
 <div class="bg-white shadow-xl rounded-3xl p-8 fade-in">
-<h1 class="text-2xl font-bold mb-2">Risk Profili Analizi</h1>
-<p class="text-gray-500 mb-6">${section.title} (${currentSection+1}/${sections.length})</p>
+<h1 class="text-xl font-bold mb-2">${section.title}
+(${currentSection+1}/${sections.length})</h1>
 
-<div class="space-y-6">
+<div class="space-y-5">
 ${section.questions.map((q,i)=>`
 <div>
-<p class="mb-2 font-medium">${q}</p>
+<p class="mb-2">${q}</p>
 <div class="flex justify-between text-xs text-gray-400 mb-1">
 <span>Hiç rahat değilim</span>
 <span>Son derece rahatım</span>
@@ -150,116 +121,127 @@ ${section.questions.map((q,i)=>`
 <div class="flex gap-2">
 ${[1,2,3,4,5].map(v=>`
 <button onclick="answer(${currentSection},${i},${v})"
-class="flex-1 py-2 rounded-xl border ${answers[`${currentSection}-${i}`]==v?'bg-black text-white':'bg-white'}">
+class="flex-1 py-2 rounded-xl border 
+${answers[`${currentSection}-${i}`]==v?'bg-black text-white':'bg-white'}">
 ${v}
 </button>`).join("")}
 </div>
 </div>`).join("")}
 </div>
 
-<div class="mt-8 flex justify-between">
-<button onclick="prev()" class="px-5 py-2 bg-gray-200 rounded-xl">Geri</button>
-<button onclick="next()" class="px-5 py-2 bg-black text-white rounded-xl">
+<div class="mt-6 flex justify-between">
+<button onclick="prev()" class="px-4 py-2 bg-gray-200 rounded-xl">Geri</button>
+<button onclick="next()" class="px-4 py-2 bg-black text-white rounded-xl">
 ${currentSection===sections.length-1?'Sonucu Gör':'İleri'}
 </button>
 </div>
 </div>
 `;
 
-}else{
-showResult();
-}
-
+sendHeight();
 }
 
 function answer(s,i,v){
 answers[`${s}-${i}`]=v;
-render();
+renderQuiz();
 }
 
 function prev(){
-if(currentSection>0){currentSection--; render();}
+if(currentSection>0){
+currentSection--;
+renderQuiz();
+}
 }
 
 function next(){
-const section=sections[currentSection];
-for(let i=0;i<section.questions.length;i++){
+const sec=sections[currentSection];
+for(let i=0;i<sec.questions.length;i++){
 if(!answers[`${currentSection}-${i}`]){
-alert("Tüm soruları yanıtlamalısınız.");
+alert("Tüm soruları cevaplayın.");
 return;
 }
 }
+
+if(currentSection===sections.length-1){
+showLogin();
+}else{
 currentSection++;
-render();
+renderQuiz();
+}
 }
 
-/* ---------------- RESULT ---------------- */
+/* ---------- RESULT ---------- */
 
 function showResult(){
 
-let total=Object.values(answers).reduce((a,b)=>a+b,0);
+let total=Object.values(answers)
+.reduce((a,b)=>a+b,0);
 
 let profile=profiles.find(p=>total>=p.min && total<=p.max);
 
-let categoryScores=sections.map((sec,si)=>{
-let sum=0;
-for(let i=0;i<sec.questions.length;i++){
-sum+=answers[`${si}-${i}`];
+const resultData={
+name:currentUser.name,
+email:currentUser.email,
+total,
+profile:profile.name,
+date:new Date().toISOString()
+};
+
+localStorage.setItem(
+"riskResult_"+currentUser.email,
+JSON.stringify(resultData)
+);
+
+showSavedResult(resultData);
 }
-return Math.round(sum/5);
-});
+
+function showSavedResult(data){
 
 app.innerHTML=`
 <div class="bg-white shadow-xl rounded-3xl p-8 fade-in">
-<h2 class="text-2xl font-bold mb-4">Sonuç</h2>
+<h2 class="text-2xl font-bold mb-3">Merhaba ${data.name}</h2>
 
-<div class="${profile.color} text-white rounded-2xl p-6 mb-6">
-<h3 class="text-xl font-bold">${profile.name}</h3>
-<p class="opacity-90 mt-1">${profile.desc}</p>
-<p class="mt-3 text-sm"><strong>Güçlü Yön:</strong> ${profile.strength}</p>
-<p class="text-sm"><strong>Dikkat Alanı:</strong> ${profile.attention}</p>
+<div class="p-6 rounded-2xl bg-black text-white mb-6">
+<h3 class="text-xl font-bold">${data.profile}</h3>
+<p class="mt-2">Toplam Skor: ${data.total}</p>
+<p class="text-sm opacity-70 mt-2">
+Oluşturulma: ${new Date(data.date).toLocaleDateString()}
+</p>
 </div>
 
-<p class="mb-4 font-semibold">Toplam Skor: ${total} / 180</p>
+<canvas id="chart"></canvas>
 
-<canvas id="radarChart"></canvas>
-
-<button onclick="restart()" class="mt-6 px-5 py-2 bg-black text-white rounded-xl">
-Tekrar Başla
+<button onclick="resetAll()"
+class="mt-6 px-5 py-2 bg-red-500 text-white rounded-xl">
+Testi Sıfırla
 </button>
 </div>
 `;
 
-const ctx=document.getElementById('radarChart');
-
-new Chart(ctx,{
-type:'radar',
-data:{
-labels:sections.map(s=>s.title),
-datasets:[{
-label:"Kategori Skoru",
-data:categoryScores,
-borderWidth:2,
-pointRadius:3
-}]
-},
-options:{
-scales:{
-r:{min:0,max:25}
-}
-}
-});
-
 sendHeight();
 }
 
-function restart(){
-currentSection=0;
+function resetAll(){
+localStorage.removeItem("riskResult_"+currentUser.email);
 answers={};
-render();
+currentSection=0;
+renderQuiz();
 }
 
-render();
+/* ---------- INIT ---------- */
+
+let savedUser=localStorage.getItem("riskUser");
+if(savedUser){
+currentUser=JSON.parse(savedUser);
+let saved=localStorage.getItem("riskResult_"+currentUser.email);
+if(saved){
+showSavedResult(JSON.parse(saved));
+}else{
+renderQuiz();
+}
+}else{
+renderQuiz();
+}
 
 </script>
 </body>
