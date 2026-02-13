@@ -2,461 +2,526 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Risk Profili Analizi | Yatırım Atlası</title>
-
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-
-<!-- ════════════════════════════════════════════
-  🔥 FIREBASE KURULUMU
-  1. https://console.firebase.google.com → Yeni proje oluştur
-  2. Project Settings > "Web uygulaması ekle" (</> ikonu)
-  3. Aşağıdaki firebaseConfig'i kendi değerlerinizle doldurun
-  4. Authentication > Sign-in method:
-     → "Email/Password" aktif et
-     → "Google" aktif et (yatirimatlas.com domain'i ekle)
-  5. Authorized domains'e GitHub Pages URL'nizi ekleyin:
-     yatirimatlas.github.io
-════════════════════════════════════════════ -->
-
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import {
-    getAuth, onAuthStateChanged,
-    GoogleAuthProvider, signInWithPopup,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    updateProfile, signOut
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
-  /* ── 🔧 BURAYA KENDİ FIREBASE BİLGİLERİNİZİ GİRİN ── */
-  const firebaseConfig = {
-    apiKey:            "YOUR_API_KEY",
-    authDomain:        "YOUR_PROJECT.firebaseapp.com",
-    projectId:         "YOUR_PROJECT_ID",
-    storageBucket:     "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId:             "YOUR_APP_ID"
-  };
-
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const googleProvider = new GoogleAuthProvider();
-
-  /* Globale aç — quiz mantığı bunları kullanır */
-  window._fb = { auth, googleProvider,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    GoogleAuthProvider, signInWithPopup,
-    updateProfile, signOut, onAuthStateChanged };
-
-  /* Kullanıcı oturumunu izle */
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      window._fbUser = user;
-      if (window._onAuthReady) window._onAuthReady(user);
-    } else {
-      window._fbUser = null;
-    }
-  });
-</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Risk Profili | Yatırım Atlası</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <style>
+/* ══════════════════════════════
+   RESET & ROOT
+══════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:          #f0ede8;
-  --card:        #ffffff;
-  --ink:         #1a1814;
-  --muted:       #8a857e;
-  --border:      #e2ddd8;
-  --accent:      #2563eb;
-  --accent-soft: #eff4ff;
-  --green:       #16a34a;
-  --green-soft:  #f0fdf4;
-  --red:         #dc2626;
-  --red-soft:    #fef2f2;
-  --fb-blue:     #1877f2;
-  --radius:      20px;
+  --bg:      #f5f3ef;
+  --card:    #ffffff;
+  --ink:     #18181b;
+  --ink2:    #3f3f46;
+  --muted:   #a1a1aa;
+  --border:  #e4e4e7;
+  --blue:    #3b82f6;
+  --blue-s:  #eff6ff;
+  --green:   #22c55e;
+  --amber:   #f59e0b;
+  --red:     #ef4444;
+  --r:       18px;
 }
 
-html, body {
-  height: 100%;
+html {
   background: var(--bg);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   color: var(--ink);
-  overflow: hidden;
+  /* Hide scrollbar but allow scroll if content overflows on tiny screens */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+html::-webkit-scrollbar { display: none; }
 
-.shell {
-  height: 100vh;
+body {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
+  justify-content: flex-start;
+  padding: 20px 16px 24px;
+  scrollbar-width: none;
 }
+body::-webkit-scrollbar { display: none; }
 
-.card {
-  background: var(--card);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 40px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+/* ══════════════════════════════
+   PROGRESS BAR
+══════════════════════════════ */
+#prog-wrap {
   width: 100%;
-  max-width: 560px;
-  overflow: hidden;
+  max-width: 500px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
 }
-
-/* ── PROGRESS ── */
-.progress-wrap {
-  width: 100%;
-  max-width: 560px;
-  margin-bottom: 14px;
-}
-.progress-meta {
+.prog-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--muted);
-  margin-bottom: 7px;
-  font-weight: 500;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
 }
-.progress-track {
-  height: 3px;
+.prog-track {
+  height: 4px;
   background: var(--border);
   border-radius: 99px;
   overflow: hidden;
 }
-.progress-fill {
+.prog-fill {
   height: 100%;
   background: var(--ink);
   border-radius: 99px;
-  transition: width .4s cubic-bezier(.4,0,.2,1);
+  transition: width .5s cubic-bezier(.4,0,.2,1);
 }
 
-/* ── QUESTION ── */
-.q-header {
-  padding: 28px 32px 20px;
+/* ══════════════════════════════
+   CARD
+══════════════════════════════ */
+#card {
+  width: 100%;
+  max-width: 500px;
+  background: var(--card);
+  border-radius: var(--r);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.04),
+    0 4px 16px rgba(0,0,0,.06),
+    0 16px 40px rgba(0,0,0,.04);
+  overflow: hidden;
+}
+
+/* ══════════════════════════════
+   QUESTION LAYOUT
+══════════════════════════════ */
+.q-top {
+  padding: 22px 24px 16px;
   border-bottom: 1px solid var(--border);
 }
-.q-category {
-  display: inline-block;
-  font-size: 11px; font-weight: 600; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--accent);
-  background: var(--accent-soft); padding: 4px 10px;
-  border-radius: 99px; margin-bottom: 14px;
+.q-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--blue);
+  background: var(--blue-s);
+  padding: 3px 10px;
+  border-radius: 99px;
+  margin-bottom: 11px;
 }
 .q-text {
-  font-family: 'DM Serif Display', serif;
-  font-size: 22px; line-height: 1.35; min-height: 62px;
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(15px, 3.5vw, 19px);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
 }
 
-/* ── SCALE ── */
-.scale-wrap { padding: 24px 32px 28px; }
-.scale-labels {
-  display: flex; justify-content: space-between;
-  font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 14px;
+/* ══════════════════════════════
+   SCALE
+══════════════════════════════ */
+.scale-wrap {
+  padding: 16px 24px 18px;
 }
-.scale-btns { display: flex; gap: 8px; }
-.scale-btns button {
-  flex: 1; aspect-ratio: 1; border-radius: 14px;
-  border: 1.5px solid var(--border); background: white;
-  font-size: 16px; font-weight: 600; font-family: 'DM Sans', sans-serif;
-  cursor: pointer; color: var(--ink); transition: all .18s ease;
+.scale-hint {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 10px;
 }
-.scale-btns button:hover {
-  border-color: var(--ink); background: #fafaf8;
-  transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08);
+.scale-row {
+  display: flex;
+  gap: 6px;
 }
-.scale-btns button.active {
-  background: var(--ink); color: white; border-color: var(--ink);
-  transform: translateY(-2px); box-shadow: 0 4px 16px rgba(26,24,20,.25);
+.scale-row button {
+  flex: 1;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-size: clamp(13px, 3vw, 16px);
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: var(--ink2);
+  cursor: pointer;
+  transition: all .14s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.scale-row button:active { transform: scale(.94); }
+.scale-row button.sel {
+  background: var(--ink);
+  color: white;
+  border-color: var(--ink);
+  box-shadow: 0 3px 10px rgba(0,0,0,.18);
+  transform: translateY(-2px);
 }
 
-/* ── NAV ── */
+/* ══════════════════════════════
+   NAV
+══════════════════════════════ */
 .nav {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 32px 20px; border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px 16px;
+  border-top: 1px solid var(--border);
+  gap: 10px;
 }
 .btn-back {
-  font-size: 13px; font-weight: 500; color: var(--muted);
-  background: none; border: none; cursor: pointer; padding: 8px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 4px;
+  font-family: 'Inter', sans-serif;
   transition: color .15s;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
 .btn-back:hover { color: var(--ink); }
-.btn-back:disabled { opacity: .3; cursor: default; }
+.btn-back:disabled { opacity: .25; cursor: default; }
+
 .btn-next {
-  font-size: 14px; font-weight: 600;
-  font-family: 'DM Sans', sans-serif; color: white;
-  background: var(--ink); border: none; border-radius: 12px;
-  padding: 11px 24px; cursor: pointer; transition: all .18s ease;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: white;
+  background: var(--ink);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all .14s ease;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
-.btn-next:hover { background: #3a3530; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+.btn-next:active { transform: scale(.97); }
 
-/* ── ANIMATIONS ── */
-.slide-out-left  { animation: soL .20s ease forwards; }
-.slide-in-right  { animation: siR .20s ease forwards; }
-.slide-out-right { animation: soR .20s ease forwards; }
-.slide-in-left   { animation: siL .20s ease forwards; }
-@keyframes soL { to   { opacity:0; transform:translateX(-32px); } }
-@keyframes siR { from { opacity:0; transform:translateX(32px);  } to { opacity:1; transform:translateX(0); } }
-@keyframes soR { to   { opacity:0; transform:translateX(32px);  } }
-@keyframes siL { from { opacity:0; transform:translateX(-32px); } to { opacity:1; transform:translateX(0); } }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-
-/* ── AUTH SCREEN ── */
-.auth-wrap {
-  padding: 44px 40px 40px;
-  animation: fadeIn .3s ease;
+/* ══════════════════════════════
+   LOGIN
+══════════════════════════════ */
+.login-wrap {
+  padding: 28px 24px;
 }
-
-.auth-wrap h1 {
-  font-family: 'DM Serif Display', serif;
-  font-size: 32px; font-weight: 400;
-  text-align: center; margin-bottom: 10px;
+.login-wrap h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(20px, 5vw, 24px);
+  margin-bottom: 6px;
 }
-
-.auth-subtitle {
-  text-align: center;
-  font-size: 14px; color: var(--muted);
-  margin-bottom: 28px;
+.login-wrap p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: 22px;
 }
-.auth-subtitle a {
-  color: var(--accent); font-weight: 500;
-  text-decoration: none; cursor: pointer;
-}
-.auth-subtitle a:hover { text-decoration: underline; }
-
-/* Social buttons */
-.btn-google, .btn-facebook {
-  width: 100%; padding: 13px 18px;
-  border-radius: 10px; border: 1.5px solid var(--border);
-  font-size: 14px; font-weight: 500;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer; display: flex; align-items: center;
-  justify-content: center; gap: 10px; transition: all .18s;
+.field {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  color: var(--ink);
+  background: white;
+  outline: none;
+  transition: border-color .15s;
   margin-bottom: 10px;
+  -webkit-appearance: none;
 }
-.btn-google {
-  background: white; color: var(--ink);
+.field:focus { border-color: var(--ink); }
+.btn-submit {
+  width: 100%;
+  padding: 13px;
+  background: var(--ink);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all .14s;
+  -webkit-tap-highlight-color: transparent;
 }
-.btn-google:hover { background: #f8f8f8; border-color: #ccc; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.btn-submit:active { transform: scale(.98); }
 
-.btn-facebook {
-  background: var(--fb-blue); color: white; border-color: var(--fb-blue);
-}
-.btn-facebook:hover { background: #166fe5; border-color: #166fe5; box-shadow: 0 2px 8px rgba(24,119,242,.3); }
-
-/* Divider */
-.auth-divider {
-  display: flex; align-items: center; gap: 12px;
-  margin: 18px 0; color: var(--muted); font-size: 13px;
-}
-.auth-divider::before, .auth-divider::after {
-  content: ""; flex: 1; height: 1px; background: var(--border);
-}
-
-/* Email form */
-.auth-form input {
-  width: 100%; padding: 12px 15px;
-  border: 1.5px solid var(--border); border-radius: 10px;
-  font-size: 14px; font-family: 'DM Sans', sans-serif;
-  color: var(--ink); background: white; margin-bottom: 10px;
-  outline: none; transition: border-color .15s;
-}
-.auth-form input:focus { border-color: var(--ink); }
-
-.auth-error {
-  font-size: 12px; color: var(--red); background: var(--red-soft);
-  border-radius: 8px; padding: 8px 12px; margin-bottom: 12px;
-  display: none; line-height: 1.5;
-}
-.auth-error.show { display: block; }
-
-.btn-email-submit {
-  width: 100%; padding: 13px;
-  background: white; color: var(--ink);
-  border: 1.5px solid var(--border); border-radius: 10px;
-  font-size: 14px; font-weight: 500;
-  font-family: 'DM Sans', sans-serif; cursor: pointer;
-  transition: all .18s; display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.btn-email-submit:hover { border-color: var(--ink); background: #fafaf8; }
-
-/* Inline email form (expanded) */
-.email-expanded {
-  margin-top: 14px;
-  border-top: 1px solid var(--border);
-  padding-top: 18px;
-  animation: fadeIn .25s ease;
-}
-.email-expanded .btn-submit-main {
-  width: 100%; padding: 13px;
-  background: var(--ink); color: white;
-  border: none; border-radius: 10px;
-  font-size: 14px; font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer; margin-top: 4px; transition: all .18s;
-}
-.email-expanded .btn-submit-main:hover { background: #3a3530; transform: translateY(-1px); }
-.email-expanded .btn-submit-main:disabled { opacity:.6; cursor:default; transform:none; }
-
-/* Privacy note */
-.auth-note {
-  font-size: 12px; color: var(--muted); text-align: center;
-  line-height: 1.6; margin-top: 20px; padding-top: 20px;
-  border-top: 1px solid var(--border);
+/* ══════════════════════════════
+   RESULT
+══════════════════════════════ */
+.result-wrap {
+  padding: 24px 24px 28px;
 }
 
-/* ── USER BAR (logged in) ── */
-.user-bar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 20px; background: #fafaf8;
-  border-bottom: 1px solid var(--border);
+/* Profile badge */
+.profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
 }
-.user-avatar {
-  width: 30px; height: 30px; border-radius: 50%;
-  background: var(--ink); color: white;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 600; overflow: hidden; flex-shrink: 0;
+.profile-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
 }
-.user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.user-name { font-size: 13px; font-weight: 500; flex: 1; }
-.btn-signout {
-  font-size: 11px; color: var(--muted); background: none; border: none;
-  cursor: pointer; font-family: 'DM Sans', sans-serif;
-  text-decoration: underline; text-underline-offset: 2px;
+.profile-info {}
+.profile-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2px;
 }
-.btn-signout:hover { color: var(--red); }
+.profile-name {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(18px, 4.5vw, 22px);
+  font-weight: 700;
+  color: var(--ink);
+}
+.profile-score {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+}
 
-/* ── RESULT ── */
-.result-body { padding: 34px 34px 28px; text-align: center; }
-.result-icon {
-  width: 58px; height: 58px; border-radius: 50%;
-  background: var(--ink); color: white;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 18px; font-size: 23px;
+/* Gauge bar */
+.gauge-section {
+  margin-bottom: 18px;
 }
-.result-label {
-  font-size: 11px; font-weight: 600; letter-spacing: .14em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+.gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
 }
-.result-profile {
-  font-family: 'DM Serif Display', serif;
-  font-size: 30px; color: var(--ink); margin-bottom: 9px;
-}
-.result-score {
-  display: inline-block; font-size: 12px; color: var(--muted);
-  background: var(--bg); padding: 4px 12px; border-radius: 99px; margin-bottom: 20px;
-}
-.score-bar-wrap {
-  background: var(--bg); border-radius: 12px;
-  padding: 13px 16px; margin-bottom: 18px; text-align: left;
-}
-.score-bar-labels {
-  display: flex; justify-content: space-between;
-  font-size: 10px; color: var(--muted); font-weight: 600;
-  letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px;
-}
-.score-bar-track { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
-.score-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #60a5fa, #1d4ed8);
+.gauge-track {
+  height: 8px;
+  background: var(--border);
   border-radius: 99px;
-  transition: width 1s cubic-bezier(.4,0,.2,1) .35s;
+  overflow: visible;
+  position: relative;
 }
-.result-desc {
-  font-size: 13px; color: var(--muted); line-height: 1.7;
-  margin-bottom: 22px; max-width: 380px; margin-left: auto; margin-right: auto;
+.gauge-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 1.2s cubic-bezier(.4,0,.2,1) .4s;
+  position: relative;
 }
-.btn-email-result {
-  width: 100%; padding: 12px;
-  background: var(--green-soft); color: var(--green);
-  border: 1.5px solid #bbf7d0; border-radius: 12px;
-  font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif;
-  cursor: pointer; transition: all .18s;
-  display: flex; align-items: center; justify-content: center; gap: 7px;
+.gauge-thumb {
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid currentColor;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+
+/* Zones */
+.gauge-zones {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+.zone {
+  flex: 1;
+  text-align: center;
+  padding: 4px 2px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .03em;
+}
+.zone.z1 { background: #dcfce7; color: #15803d; }
+.zone.z2 { background: #fef9c3; color: #92400e; }
+.zone.z3 { background: #dbeafe; color: #1d4ed8; }
+.zone.z4 { background: #fee2e2; color: #b91c1c; }
+.zone.active { outline: 2px solid currentColor; outline-offset: 1px; }
+
+/* Radar chart */
+.chart-section {
+  margin-bottom: 18px;
+}
+.chart-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
   margin-bottom: 10px;
 }
-.btn-email-result:hover { background: #dcfce7; transform: translateY(-1px); }
-.btn-email-result:disabled { opacity:.6; cursor:default; transform:none; }
-.email-status {
-  font-size: 12px; padding: 8px 12px; border-radius: 8px;
-  text-align: center; display: none; margin-bottom: 10px;
+.chart-box {
+  position: relative;
+  height: 200px;
 }
-.email-status.success { background: var(--green-soft); color: var(--green); display: block; }
-.email-status.error   { background: var(--red-soft);   color: var(--red);   display: block; }
+
+/* Description */
+.desc-card {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--ink2);
+  line-height: 1.65;
+  margin-bottom: 16px;
+}
+.desc-card strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+
+/* Alloc pills */
+.alloc-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.alloc-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+}
+.alloc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 .btn-reset {
-  font-size: 12px; color: var(--muted); background: none; border: none;
-  cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
-  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-family: 'Inter', sans-serif;
+  display: block;
+  margin: 0 auto;
+  -webkit-tap-highlight-color: transparent;
 }
 .btn-reset:hover { color: var(--ink); }
+
+/* ══════════════════════════════
+   ANIMATIONS
+══════════════════════════════ */
+@keyframes fadeSlideRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeSlideLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim-right { animation: fadeSlideRight .2s ease forwards; }
+.anim-left  { animation: fadeSlideLeft  .2s ease forwards; }
+.anim-up    { animation: fadeIn         .3s ease forwards; }
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-7px); }
+  60%     { transform: translateX(7px); }
+}
+.shake { animation: shake .25s ease; }
 </style>
 </head>
 <body>
 
-<div class="shell">
-  <div class="progress-wrap" id="progress-wrap">
-    <div class="progress-meta">
-      <span id="prog-label">Risk Algısı</span>
-      <span id="prog-count">1 / 30</span>
-    </div>
-    <div class="progress-track">
-      <div class="progress-fill" id="prog-fill" style="width:3.3%"></div>
-    </div>
+<!-- PROGRESS (hidden during login/result) -->
+<div id="prog-wrap">
+  <div class="prog-meta">
+    <span id="prog-section">Risk Algısı</span>
+    <span id="prog-num">1 / 30</span>
   </div>
-  <div class="card" id="card"></div>
+  <div class="prog-track">
+    <div class="prog-fill" id="prog-fill" style="width:3.3%"></div>
+  </div>
 </div>
+
+<!-- MAIN CARD -->
+<div id="card"></div>
 
 <script>
 /* ═══════════════════════════════════
-   EmailJS (opsiyonel — e-posta için)
-   YOUR_PUBLIC_KEY yerine kendi key'inizi yazın
+   DATA
 ═══════════════════════════════════ */
-const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
-const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-
-/* ── DATA ── */
-const sections = [
-  { title: "Risk Algısı", questions: [
+const SECTIONS = [
+  { key:"risk",    title:"Risk Algısı",          color:"#6366f1", questions:[
     "Piyasa %20 düştüğünde pozisyonumu koruyabilirim.",
     "Geçici zararlar beni paniğe sürüklemez.",
     "Dalgalı piyasalarda sakin kalırım.",
     "Portföy düşüşlerinde stratejimi bozmam.",
     "Belirsizlik dönemlerinde yatırım yapabilirim."
   ]},
-  { title: "Volatilite Toleransı", questions: [
+  { key:"volat",   title:"Volatilite Toleransı", color:"#8b5cf6", questions:[
     "Yüksek getiri için risk alabilirim.",
     "Günlük fiyat değişimleri beni rahatsız etmez.",
     "Agresif yatırım araçlarına açığım.",
     "Kısa vadeli kayıpları tolere edebilirim.",
     "Oynaklık fırsat yaratır."
   ]},
-  { title: "Zaman Ufku", questions: [
+  { key:"zaman",   title:"Zaman Ufku",           color:"#3b82f6", questions:[
     "Yatırımlarımı uzun vadeli planlarım.",
     "En az 5 yıl yatırımda kalabilirim.",
     "Sabırlı bir yatırımcıyım.",
     "Kısa vadeli kazanç önceliğim değildir.",
     "Uzun süre bekleyebilirim."
   ]},
-  { title: "Finansal Dayanıklılık", questions: [
+  { key:"dayanik", title:"Finansal Dayanıklılık", color:"#10b981", questions:[
     "Acil durum fonum var.",
     "Borç oranım düşük.",
     "Gelirim düzenli.",
     "Yatırım zararları hayatımı etkilemez.",
     "Nakit ihtiyacım düşük."
   ]},
-  { title: "Bilgi ve Deneyim", questions: [
+  { key:"bilgi",   title:"Bilgi & Deneyim",      color:"#f59e0b", questions:[
     "Piyasa bilgim var.",
     "Daha önce yatırım yaptım.",
     "Risk-getiri ilişkisini bilirim.",
     "Farklı varlık türlerini tanırım.",
     "Piyasa analizlerini takip ederim."
   ]},
-  { title: "Davranışsal Disiplin", questions: [
+  { key:"davran",  title:"Davranışsal Disiplin", color:"#ef4444", questions:[
     "Panik satış yapmam.",
     "Sürü psikolojisinden etkilenmem.",
     "Stratejime sadık kalırım.",
@@ -465,458 +530,398 @@ const sections = [
   ]}
 ];
 
-const allQuestions = [];
-sections.forEach((sec) => {
-  sec.questions.forEach((q) => allQuestions.push({ section: sec.title, text: q }));
-});
-const TOTAL = allQuestions.length;
+// Flatten all questions
+const ALL_Q = [];
+SECTIONS.forEach((s,si) => s.questions.forEach((q,qi) => ALL_Q.push({s,si,qi,text:q})));
+const TOTAL = ALL_Q.length; // 30, max score = 150, min = 30
 
-const profiles = [
-  { min:30,  max:75,  name:"Koruma Odaklı", icon:"🛡️", desc:"Sermayeyi korumayı önceliklendirirsiniz. Tahvil, altın ve mevduat gibi düşük riskli araçlar size uygundur." },
-  { min:76,  max:110, name:"Dengeli",        icon:"⚖️", desc:"Risk ve getiriyi dengede tutarsınız. Karma portföyler ve temettü hisseleri profilinize yakışır." },
-  { min:111, max:150, name:"Büyüme Odaklı",  icon:"📈", desc:"Uzun vadeli büyüme için makul risk alırsınız. Hisse ağırlıklı, çeşitlendirilmiş portföyler uygundur." },
-  { min:151, max:180, name:"Agresif",        icon:"🚀", desc:"Yüksek getiri için yüksek riski göze alırsınız. Kripto, kaldıraçlı araçlar ve büyüme hisseleri radarınızda." }
+const PROFILES = [
+  {
+    min:30, max:74, name:"Koruma Odaklı", icon:"🛡️",
+    gradient:["#bbf7d0","#4ade80"],
+    color:"#15803d",
+    desc:"Sermayenizi korumayı ön planda tutuyorsunuz. Kısa vadeli kayıplar sizi rahatsız ediyor ve güvenli liman varlıklara yöneliyorsunuz.",
+    suggestion:"Devlet tahvili, altın, mevduat ve düşük volatiliteli fonlar portföyünüzün temelini oluşturabilir.",
+    alloc:[{l:"Tahvil/Mevduat",p:"50%",c:"#4ade80"},{l:"Altın",p:"25%",c:"#fbbf24"},{l:"Hisse",p:"15%",c:"#60a5fa"},{l:"Diğer",p:"10%",c:"#a78bfa"}]
+  },
+  {
+    min:75, max:104, name:"Dengeli", icon:"⚖️",
+    gradient:["#fef08a","#fbbf24"],
+    color:"#92400e",
+    desc:"Risk ve getiriyi dengelemeyi tercih ediyorsunuz. Makul getiri için sınırlı düşüşleri kabul edebilirsiniz.",
+    suggestion:"Karma portföy, temettü hisseleri ve orta vadeli tahvil kombinasyonu size uygun.",
+    alloc:[{l:"Hisse",p:"40%",c:"#60a5fa"},{l:"Tahvil",p:"35%",c:"#4ade80"},{l:"Altın",p:"15%",c:"#fbbf24"},{l:"Diğer",p:"10%",c:"#a78bfa"}]
+  },
+  {
+    min:105, max:134, name:"Büyüme Odaklı", icon:"📈",
+    gradient:["#bfdbfe","#3b82f6"],
+    color:"#1d4ed8",
+    desc:"Uzun vadeli büyüme için geçici dalgalanmaları kaldırabiliyorsunuz. Piyasayı yakından takip ediyor ve bilinçli risk alıyorsunuz.",
+    suggestion:"Hisse ağırlıklı, çeşitlendirilmiş bir portföy. Gelişmekte olan piyasalar ve büyüme hisseleri radar da olabilir.",
+    alloc:[{l:"Hisse",p:"60%",c:"#60a5fa"},{l:"Tahvil",p:"20%",c:"#4ade80"},{l:"Altın",p:"10%",c:"#fbbf24"},{l:"Kripto/Diğer",p:"10%",c:"#a78bfa"}]
+  },
+  {
+    min:135, max:150, name:"Agresif", icon:"🚀",
+    gradient:["#fecaca","#ef4444"],
+    color:"#b91c1c",
+    desc:"Yüksek getiri için yüksek riski göze alabiliyorsunuz. Volatiliteyi fırsat olarak görüyor, uzun vadeli düşünüyorsunuz.",
+    suggestion:"Yüksek büyüme potansiyelli hisseler, kripto para ve alternatif yatırım araçları profilinize uygun.",
+    alloc:[{l:"Hisse",p:"70%",c:"#60a5fa"},{l:"Kripto",p:"15%",c:"#a78bfa"},{l:"Tahvil",p:"10%",c:"#4ade80"},{l:"Diğer",p:"5%",c:"#fbbf24"}]
+  }
 ];
 
-/* ── STATE ── */
-let current = 0;
-let answers = {};
-let emailExpanded = false;
+/* ═══════════════════════════════════
+   STATE
+═══════════════════════════════════ */
+let cur = 0;
+let ans = {};   // flat index → 1..5
+let user = null;
+let radarChart = null;
 
+/* ═══════════════════════════════════
+   DOM
+═══════════════════════════════════ */
 const card     = document.getElementById("card");
+const progWrap = document.getElementById("prog-wrap");
 const progFill = document.getElementById("prog-fill");
-const progLabel= document.getElementById("prog-label");
-const progCount= document.getElementById("prog-count");
-const progWrap = document.getElementById("progress-wrap");
+const progSection = document.getElementById("prog-section");
+const progNum     = document.getElementById("prog-num");
 
-/* ── SLIDE ── */
-function setContent(html, direction = "right") {
-  const out = direction === "right" ? "slide-out-left"  : "slide-out-right";
-  const inn = direction === "right" ? "slide-in-right"  : "slide-in-left";
-  card.classList.add(out);
-  setTimeout(() => {
-    card.innerHTML = html;
-    card.classList.remove(out);
-    card.classList.add(inn);
-    setTimeout(() => card.classList.remove(inn), 260);
-  }, 185);
-}
-
-/* ── PROGRESS ── */
-function updateProgress() {
-  const pct = ((current + 1) / TOTAL) * 100;
+/* ═══════════════════════════════════
+   HELPERS
+═══════════════════════════════════ */
+function updateProg() {
+  const pct = ((cur + 1) / TOTAL) * 100;
   progFill.style.width = Math.max(pct, 3.3) + "%";
-  progLabel.textContent = allQuestions[Math.min(current, TOTAL-1)].section;
-  progCount.textContent = (current+1) + " / " + TOTAL;
+  progSection.textContent = ALL_Q[Math.min(cur, TOTAL-1)].s.title;
+  progNum.textContent = (cur+1) + " / " + TOTAL;
 }
 
-/* ── QUESTION ── */
-function renderQuestion(dir = "right") {
-  updateProgress();
+function setCard(html, anim) {
+  card.innerHTML = html;
+  card.className = "";
+  if (anim) {
+    void card.offsetWidth;
+    card.classList.add(anim);
+  }
+}
+
+/* ═══════════════════════════════════
+   QUESTION SCREEN
+═══════════════════════════════════ */
+function renderQ(dir) {
+  updateProg();
   progWrap.style.display = "";
-  const q = allQuestions[current];
-  const sel = answers[current];
-  const isLast  = current === TOTAL - 1;
-  const isFirst = current === 0;
+
+  const q = ALL_Q[cur];
+  const sel = ans[cur];
+  const isLast = cur === TOTAL - 1;
 
   const btns = [1,2,3,4,5].map(v =>
-    `<button class="${sel===v?'active':''}" onclick="pick(${v})">${v}</button>`
+    `<button class="${sel===v?'sel':''}" onclick="pick(${v})">${v}</button>`
   ).join("");
 
-  setContent(`
-    <div class="q-header">
-      <div class="q-category">${q.section}</div>
+  setCard(`
+    <div class="q-top">
+      <div class="q-cat">${q.s.title}</div>
       <div class="q-text">${q.text}</div>
     </div>
     <div class="scale-wrap">
-      <div class="scale-labels"><span>Hiç rahat değilim</span><span>Son derece rahatım</span></div>
-      <div class="scale-btns">${btns}</div>
+      <div class="scale-hint">
+        <span>1 — Hiç rahat değilim</span>
+        <span>5 — Çok rahatım</span>
+      </div>
+      <div class="scale-row">${btns}</div>
     </div>
     <div class="nav">
-      <button class="btn-back" onclick="goBack()" ${isFirst?"disabled":""}>← Geri</button>
-      <button class="btn-next" onclick="goNext()">${isLast?"Sonucu Gör →":"İleri →"}</button>
+      <button class="btn-back" onclick="goBack()" ${cur===0?"disabled":""}>← Geri</button>
+      <button class="btn-next" onclick="goNext()">${isLast?"Sonucu Gör ✦":"İleri →"}</button>
     </div>
-  `, dir);
+  `, dir === "right" ? "anim-right" : dir === "left" ? "anim-left" : null);
 }
 
 function pick(v) {
-  answers[current] = v;
-  const q = allQuestions[current];
-  const isLast  = current === TOTAL - 1;
-  const isFirst = current === 0;
+  ans[cur] = v;
+  // re-render without animation to update button state
+  const q = ALL_Q[cur];
+  const isLast = cur === TOTAL - 1;
   const btns = [1,2,3,4,5].map(val =>
-    `<button class="${v===val?'active':''}" onclick="pick(${val})">${val}</button>`
+    `<button class="${v===val?'sel':''}" onclick="pick(${val})">${val}</button>`
   ).join("");
   card.innerHTML = `
-    <div class="q-header">
-      <div class="q-category">${q.section}</div>
+    <div class="q-top">
+      <div class="q-cat">${q.s.title}</div>
       <div class="q-text">${q.text}</div>
     </div>
     <div class="scale-wrap">
-      <div class="scale-labels"><span>Hiç rahat değilim</span><span>Son derece rahatım</span></div>
-      <div class="scale-btns">${btns}</div>
+      <div class="scale-hint">
+        <span>1 — Hiç rahat değilim</span>
+        <span>5 — Çok rahatım</span>
+      </div>
+      <div class="scale-row">${btns}</div>
     </div>
     <div class="nav">
-      <button class="btn-back" onclick="goBack()" ${isFirst?"disabled":""}>← Geri</button>
-      <button class="btn-next" onclick="goNext()">${isLast?"Sonucu Gör →":"İleri →"}</button>
+      <button class="btn-back" onclick="goBack()" ${cur===0?"disabled":""}>← Geri</button>
+      <button class="btn-next" onclick="goNext()">${isLast?"Sonucu Gör ✦":"İleri →"}</button>
     </div>
   `;
 }
 
 function goNext() {
-  if (!answers[current]) {
-    card.style.transform = "translateX(8px)";
-    setTimeout(()=>{ card.style.transform="translateX(-8px)";
-      setTimeout(()=>{ card.style.transform=""; }, 80); }, 80);
+  if (!ans[cur]) {
+    card.classList.remove("shake");
+    void card.offsetWidth;
+    card.classList.add("shake");
     return;
   }
-  if (current < TOTAL - 1) { current++; renderQuestion("right"); }
-  else { checkAuthThenResult(); }
+  if (cur < TOTAL - 1) { cur++; renderQ("right"); }
+  else showLogin();
 }
+
 function goBack() {
-  if (current > 0) { current--; renderQuestion("left"); }
+  if (cur > 0) { cur--; renderQ("left"); }
 }
 
-/* ── AUTH CHECK ── */
-function checkAuthThenResult() {
+/* ═══════════════════════════════════
+   LOGIN SCREEN
+═══════════════════════════════════ */
+function showLogin() {
   progWrap.style.display = "none";
-  const user = window._fbUser;
-  if (user) {
-    computeAndShow(user);
-  } else {
-    window._onAuthReady = (u) => { window._onAuthReady = null; computeAndShow(u); };
-    showAuthScreen();
-  }
-}
-
-/* ── AUTH SCREEN ── */
-function showAuthScreen() {
-  emailExpanded = false;
-  setContent(`
-    <div class="auth-wrap">
-      <h1>Kaydolun</h1>
-      <p class="auth-subtitle">
-        Zaten üye misiniz?
-        <a onclick="switchToLogin()">Giriş Yapın</a>
-      </p>
-
-      <button class="btn-google" onclick="signInGoogle()">
-        <svg width="18" height="18" viewBox="0 0 48 48">
-          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-        </svg>
-        Google ile giriş yap
-      </button>
-
-      <button class="btn-facebook" onclick="signInFacebook()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-        </svg>
-        Facebook ile hesabınızı oluşturun
-      </button>
-
-      <div class="auth-divider">veya</div>
-
-      <div class="auth-form">
-        <div class="auth-error" id="auth-err"></div>
-        <button class="btn-email-submit" onclick="toggleEmailForm()">
-          E-postanızla kaydolun
-        </button>
-        <div class="email-expanded" id="email-form" style="display:none">
-          <input id="inp-name"  placeholder="Ad Soyad"        type="text"     autocomplete="name"/>
-          <input id="inp-email" placeholder="E-posta adresi"  type="email"    autocomplete="email"/>
-          <input id="inp-pass"  placeholder="Şifre (min. 6)"  type="password" autocomplete="new-password"/>
-          <button class="btn-submit-main" onclick="doRegister()">Kaydol &amp; Sonucu Gör</button>
-        </div>
-      </div>
-
-      <p class="auth-note">
-        Kaydolduğunuzda profiliniz otomatik olarak kayıt altına alınır.<br>
-        Bilgileriniz yalnızca sonucunuzu göstermek için kullanılır.
-      </p>
+  setCard(`
+    <div class="login-wrap">
+      <h2>Son bir adım.</h2>
+      <p>Sonucunuzu görmek ve kaydetmek için ad ve e-postanızı girin. Bilgileriniz yalnızca profilinizi saklamak için kullanılır.</p>
+      <input class="field" id="f-name"  type="text"  placeholder="Ad Soyad" autocomplete="name"/>
+      <input class="field" id="f-email" type="email" placeholder="E-posta adresi" autocomplete="email"/>
+      <button class="btn-submit" onclick="doLogin()">Sonucumu Gör →</button>
     </div>
-  `, "right");
+  `, "anim-up");
+
+  // Auto-focus name on desktop
+  setTimeout(() => {
+    const el = document.getElementById("f-name");
+    if (el) el.focus();
+  }, 300);
 }
 
-function switchToLogin() {
-  emailExpanded = false;
-  setContent(`
-    <div class="auth-wrap">
-      <h1>Giriş Yapın</h1>
-      <p class="auth-subtitle">
-        Hesabınız yok mu?
-        <a onclick="showAuthScreen()">Kaydolun</a>
-      </p>
-
-      <button class="btn-google" onclick="signInGoogle()">
-        <svg width="18" height="18" viewBox="0 0 48 48">
-          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-        </svg>
-        Google ile giriş yap
-      </button>
-
-      <button class="btn-facebook" onclick="signInFacebook()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-        </svg>
-        Facebook ile giriş yap
-      </button>
-
-      <div class="auth-divider">veya</div>
-
-      <div class="auth-form">
-        <div class="auth-error" id="auth-err"></div>
-        <input id="inp-email" placeholder="E-posta adresi"  type="email"    autocomplete="email" style="margin-bottom:10px;padding:12px 15px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;width:100%;outline:none;font-family:inherit"/>
-        <input id="inp-pass"  placeholder="Şifre"           type="password" autocomplete="current-password" style="margin-bottom:10px;padding:12px 15px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;width:100%;outline:none;font-family:inherit"/>
-        <button class="btn-email-submit" onclick="doLogin()" style="background:var(--ink);color:white;border-color:var(--ink);">Giriş Yap</button>
-      </div>
-
-      <p class="auth-note">Oturum açtığınızda önceki sonucunuz yüklenir.</p>
-    </div>
-  `, "right");
-}
-
-function toggleEmailForm() {
-  const form = document.getElementById("email-form");
-  if (!form) return;
-  emailExpanded = !emailExpanded;
-  form.style.display = emailExpanded ? "block" : "none";
-}
-
-function showAuthError(msg) {
-  const el = document.getElementById("auth-err");
-  if (el) { el.textContent = msg; el.classList.add("show"); }
-}
-
-/* ── FIREBASE SIGN-IN ── */
-async function signInGoogle() {
-  const fb = window._fb;
-  if (!fb) { showAuthError("Firebase yapılandırılmadı."); return; }
-  try {
-    await fb.signInWithPopup(fb.auth, fb.googleProvider);
-    // onAuthStateChanged tetiklenecek ve _onAuthReady çağrılacak
-  } catch(e) {
-    showAuthError("Google ile giriş başarısız: " + (e.message || ""));
+function doLogin() {
+  const name  = (document.getElementById("f-name").value||"").trim();
+  const email = (document.getElementById("f-email").value||"").trim();
+  if (!name || !email || !email.includes("@")) {
+    const btn = document.querySelector(".btn-submit");
+    btn.style.background = "#ef4444";
+    setTimeout(() => btn.style.background = "", 800);
+    return;
   }
+  user = { name, email };
+  localStorage.setItem("rp_user", JSON.stringify(user));
+
+  const saved = localStorage.getItem("rp_result_" + email);
+  if (saved) showResult(JSON.parse(saved));
+  else computeResult();
 }
 
-function signInFacebook() {
-  showAuthError("Facebook girişi için Firebase Console'dan Facebook provider'ı aktif edin.");
-}
+/* ═══════════════════════════════════
+   COMPUTE + RESULT
+═══════════════════════════════════ */
+function computeResult() {
+  // Total score
+  const total = Object.values(ans).reduce((a,b)=>a+b,0);
 
-async function doRegister() {
-  const fb    = window._fb;
-  const name  = (document.getElementById("inp-name")?.value  || "").trim();
-  const email = (document.getElementById("inp-email")?.value || "").trim();
-  const pass  = (document.getElementById("inp-pass")?.value  || "").trim();
+  // Per-section scores (0–25 each → normalize to 0–100)
+  const sectScores = SECTIONS.map((s,si) => {
+    let sum = 0;
+    s.questions.forEach((_,qi) => {
+      const flatIdx = si*5 + qi;
+      sum += (ans[flatIdx] || 1);
+    });
+    return Math.round((sum / 25) * 100);
+  });
 
-  if (!fb)    { showAuthError("Firebase yapılandırılmadı."); return; }
-  if (!name)  { showAuthError("Ad Soyad boş bırakılamaz."); return; }
-  if (!email) { showAuthError("E-posta adresi boş bırakılamaz."); return; }
-  if (pass.length < 6) { showAuthError("Şifre en az 6 karakter olmalıdır."); return; }
+  const profile = PROFILES.find(p => total >= p.min && total <= p.max) || PROFILES[PROFILES.length-1];
 
-  const btn = document.querySelector(".btn-submit-main");
-  if (btn) { btn.disabled = true; btn.textContent = "Kaydediliyor…"; }
-
-  try {
-    const cred = await fb.createUserWithEmailAndPassword(fb.auth, email, pass);
-    await fb.updateProfile(cred.user, { displayName: name });
-    // onAuthStateChanged tetiklenecek
-  } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = "Kaydol & Sonucu Gör"; }
-    const msgs = {
-      "auth/email-already-in-use": "Bu e-posta zaten kullanılıyor. Giriş yapın.",
-      "auth/invalid-email":        "Geçersiz e-posta adresi.",
-      "auth/weak-password":        "Şifre çok zayıf, en az 6 karakter kullanın."
-    };
-    showAuthError(msgs[e.code] || e.message);
-  }
-}
-
-async function doLogin() {
-  const fb    = window._fb;
-  const email = (document.getElementById("inp-email")?.value || "").trim();
-  const pass  = (document.getElementById("inp-pass")?.value  || "").trim();
-
-  if (!fb)    { showAuthError("Firebase yapılandırılmadı."); return; }
-  if (!email || !pass) { showAuthError("E-posta ve şifre boş bırakılamaz."); return; }
-
-  try {
-    await fb.signInWithEmailAndPassword(fb.auth, email, pass);
-  } catch(e) {
-    const msgs = {
-      "auth/user-not-found":  "Bu e-posta ile kayıtlı hesap bulunamadı.",
-      "auth/wrong-password":  "Şifre hatalı.",
-      "auth/invalid-email":   "Geçersiz e-posta adresi.",
-      "auth/invalid-credential": "E-posta veya şifre hatalı."
-    };
-    showAuthError(msgs[e.code] || e.message);
-  }
-}
-
-/* ── RESULT ── */
-function computeAndShow(user) {
-  const total = Object.values(answers).reduce((a,b) => a+b, 0);
-  const profile = profiles.find(p => total >= p.min && total <= p.max);
   const data = {
-    name:    user.displayName || user.email,
-    email:   user.email,
-    photoURL: user.photoURL || null,
-    total,
-    profile: profile.name,
-    icon:    profile.icon,
-    desc:    profile.desc,
-    date:    new Date().toISOString()
+    name: user.name, email: user.email,
+    total, sectScores,
+    profile: profile.name, icon: profile.icon,
+    desc: profile.desc, suggestion: profile.suggestion,
+    alloc: profile.alloc, color: profile.color,
+    gradient: profile.gradient,
+    date: new Date().toISOString()
   };
-  localStorage.setItem("riskResult_" + user.uid, JSON.stringify(data));
-  showResult(data, user);
+
+  localStorage.setItem("rp_result_" + user.email, JSON.stringify(data));
+  showResult(data);
 }
 
-function showResult(data, user) {
+function showResult(data) {
   progWrap.style.display = "none";
-  const pct = Math.round(((data.total - 30) / (180 - 30)) * 100);
 
-  const initial = (data.name || "?")[0].toUpperCase();
-  const avatarHtml = data.photoURL
-    ? `<img src="${data.photoURL}" alt=""/>`
-    : initial;
+  // Gauge fill percentage (30=min, 150=max range)
+  const gaugePct = Math.round(((data.total - 30) / 120) * 100);
+  const gaugeColor = data.color;
 
-  setContent(`
-    <div class="user-bar">
-      <div class="user-avatar">${avatarHtml}</div>
-      <div class="user-name">${data.name}</div>
-      <button class="btn-signout" onclick="doSignOut()">Çıkış yap</button>
-    </div>
-    <div class="result-body">
-      <div class="result-icon">${data.icon || "✦"}</div>
-      <div class="result-label">Risk Profiliniz</div>
-      <div class="result-profile">${data.profile}</div>
-      <div class="result-score">Toplam Skor: ${data.total} / 150</div>
+  // Alloc pills HTML
+  const allocHTML = (data.alloc||[]).map(a =>
+    `<div class="alloc-pill">
+       <div class="alloc-dot" style="background:${a.c}"></div>
+       <span>${a.l} <strong>${a.p}</strong></span>
+     </div>`
+  ).join("");
 
-      <div class="score-bar-wrap">
-        <div class="score-bar-labels">
-          <span>Koruma</span><span>Dengeli</span><span>Büyüme</span><span>Agresif</span>
-        </div>
-        <div class="score-bar-track">
-          <div class="score-bar-fill" id="res-bar" style="width:0%"></div>
+  // Zone highlight
+  const zones = ["Koruma","Dengeli","Büyüme","Agresif"];
+  const activeZone = zones.indexOf(["Koruma Odaklı","Dengeli","Büyüme Odaklı","Agresif"]
+    .find(n => data.profile.includes(n.split(" ")[0])));
+  const zonesHTML = zones.map((z,i) =>
+    `<div class="zone z${i+1} ${i===activeZone?'active':''}">${z}</div>`
+  ).join("");
+
+  setCard(`
+    <div class="result-wrap">
+
+      <!-- Profile Badge -->
+      <div class="profile-badge">
+        <div class="profile-icon">${data.icon}</div>
+        <div class="profile-info">
+          <div class="profile-label">Risk Profiliniz</div>
+          <div class="profile-name">${data.profile}</div>
+          <div class="profile-score">Skor: ${data.total} / 150</div>
         </div>
       </div>
 
-      <p class="result-desc">${data.desc}</p>
+      <!-- Gauge -->
+      <div class="gauge-section">
+        <div class="gauge-labels">
+          <span>Düşük Risk</span>
+          <span>Yüksek Risk</span>
+        </div>
+        <div class="gauge-track">
+          <div class="gauge-fill" id="g-fill"
+               style="width:0%; background: linear-gradient(90deg, ${data.gradient[0]}, ${data.gradient[1]}); color:${gaugeColor}">
+            <div class="gauge-thumb"></div>
+          </div>
+        </div>
+        <div class="gauge-zones" style="margin-top:8px">${zonesHTML}</div>
+      </div>
 
-      <button class="btn-email-result" id="btn-send-email" onclick="sendResultEmail()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/>
-        </svg>
-        Sonucu E-posta ile Gönder
-      </button>
-      <div class="email-status" id="email-status"></div>
+      <!-- Radar Chart -->
+      <div class="chart-section">
+        <div class="chart-title">Kategori Bazlı Analiz</div>
+        <div class="chart-box">
+          <canvas id="radar-canvas"></canvas>
+        </div>
+      </div>
 
-      <button class="btn-reset" onclick="resetAll()">Testi yeniden başlat</button>
+      <!-- Description -->
+      <div class="desc-card">
+        <strong>Profil Açıklaması</strong>
+        ${data.desc}
+      </div>
+
+      <!-- Suggestion -->
+      <div class="desc-card">
+        <strong>Önerilen Yaklaşım</strong>
+        ${data.suggestion}
+      </div>
+
+      <!-- Alloc -->
+      <div class="chart-title" style="margin-bottom:8px">Örnek Portföy Dağılımı</div>
+      <div class="alloc-row">${allocHTML}</div>
+
+      <button class="btn-reset" onclick="resetAll()">Testi sıfırla ve yeniden başla</button>
     </div>
-  `, "right");
+  `, "anim-up");
 
+  // Animate gauge
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    const bar = document.getElementById("res-bar");
-    if (bar) bar.style.width = pct + "%";
+    const fill = document.getElementById("g-fill");
+    if (fill) fill.style.width = gaugePct + "%";
   }));
 
-  window._lastResult = data;
-}
+  // Draw radar chart
+  setTimeout(() => {
+    const canvas = document.getElementById("radar-canvas");
+    if (!canvas) return;
+    if (radarChart) radarChart.destroy();
 
-async function doSignOut() {
-  const fb = window._fb;
-  if (fb) await fb.signOut(fb.auth).catch(()=>{});
-  window._fbUser = null;
-  window._lastResult = null;
-  answers = {}; current = 0;
-  progWrap.style.display = "";
-  renderQuestion("right");
-}
-
-/* ── EMAIL ── */
-async function sendResultEmail() {
-  const data = window._lastResult;
-  if (!data) return;
-  const btn    = document.getElementById("btn-send-email");
-  const status = document.getElementById("email-status");
-
-  if (EMAILJS_PUBLIC_KEY === "YOUR_PUBLIC_KEY") {
-    const sub  = encodeURIComponent("Risk Profili Sonucunuz – Yatırım Atlası");
-    const body = encodeURIComponent(
-      `Merhaba ${data.name},\n\n` +
-      `📊 Risk Profiliniz: ${data.profile}\n` +
-      `🔢 Toplam Skor: ${data.total} / 150\n\n` +
-      `${data.desc}\n\n` +
-      `Tarih: ${new Date(data.date).toLocaleDateString('tr-TR')}\n\n— Yatırım Atlası`
-    );
-    window.location.href = `mailto:${data.email}?subject=${sub}&body=${body}`;
-    return;
-  }
-
-  btn.disabled = true;
-  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="animation:spin .8s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Gönderiliyor…`;
-
-  try {
-    if (typeof emailjs === "undefined") {
-      await loadScript("https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js");
-      emailjs.init(EMAILJS_PUBLIC_KEY);
-    }
-    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      to_name: data.name, to_email: data.email,
-      profile: data.profile, score: data.total + " / 150",
-      desc: data.desc, date: new Date(data.date).toLocaleDateString('tr-TR')
+    radarChart = new Chart(canvas, {
+      type: "radar",
+      data: {
+        labels: SECTIONS.map(s => s.title),
+        datasets: [{
+          label: "Skorunuz",
+          data: data.sectScores,
+          fill: true,
+          backgroundColor: hexToRgba(data.gradient[1], 0.18),
+          borderColor: data.gradient[1],
+          borderWidth: 2,
+          pointBackgroundColor: data.gradient[1],
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.raw}%`
+            }
+          }
+        },
+        scales: {
+          r: {
+            min: 0,
+            max: 100,
+            ticks: {
+              stepSize: 25,
+              font: { size: 9 },
+              color: "#a1a1aa",
+              backdropColor: "transparent"
+            },
+            grid: { color: "#e4e4e7" },
+            angleLines: { color: "#e4e4e7" },
+            pointLabels: {
+              font: { size: 10, family: "'Inter', sans-serif", weight: "600" },
+              color: "#3f3f46"
+            }
+          }
+        }
+      }
     });
-    btn.innerHTML = `✓ Gönderildi`;
-    status.className = "email-status success";
-    status.textContent = `Sonuç ${data.email} adresine gönderildi.`;
-  } catch(e) {
-    btn.disabled = false;
-    btn.innerHTML = `Tekrar Dene`;
-    status.className = "email-status error";
-    status.textContent = "Gönderilemedi. EmailJS ayarlarını kontrol edin.";
-  }
+  }, 350);
 }
 
-function loadScript(src) {
-  return new Promise((res, rej) => {
-    const s = document.createElement("script");
-    s.src = src; s.onload = res; s.onerror = rej;
-    document.head.appendChild(s);
-  });
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function resetAll() {
-  const fb = window._fb;
-  const user = window._fbUser;
-  if (user) localStorage.removeItem("riskResult_" + user.uid);
-  answers = {}; current = 0; window._lastResult = null;
+  if (radarChart) { radarChart.destroy(); radarChart = null; }
+  if (user) localStorage.removeItem("rp_result_" + user.email);
+  ans = {}; cur = 0; user = null;
   progWrap.style.display = "";
-  renderQuestion("right");
+  renderQ("right");
 }
 
-/* ── INIT ── */
-// Firebase yüklenince oturum kontrolü yapılır
-window._onAuthReady = null;
-
-// Sayfa yüklendiğinde auth state hazırsa doğrudan quiz'i göster
-// Eğer kullanıcı oturum açıkken sayfayı yeniden yüklerse
-// ve quiz tamamlandıysa önceki sonucu göster
-setTimeout(() => {
-  const user = window._fbUser;
-  if (user) {
-    const saved = localStorage.getItem("riskResult_" + user.uid);
-    if (saved) { showResult(JSON.parse(saved), user); return; }
+/* ═══════════════════════════════════
+   INIT
+═══════════════════════════════════ */
+(function init() {
+  const savedUser = localStorage.getItem("rp_user");
+  if (savedUser) {
+    user = JSON.parse(savedUser);
+    const saved = localStorage.getItem("rp_result_" + user.email);
+    if (saved) { showResult(JSON.parse(saved)); return; }
   }
-  if (!card.innerHTML) renderQuestion("right");
-}, 800);
-
-renderQuestion("right");
+  renderQ("right");
+})();
 </script>
 </body>
 </html>
