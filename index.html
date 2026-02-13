@@ -18,45 +18,65 @@
   --ink2:    #4a5568;
   --muted:   #94a3b8;
   --border:  #e2e8f0;
-  --bg-quiz: #f0f4fc;   /* quiz arka plan — site mavimsi tonu */
-  --bg-res:  #ffffff;   /* sonuç arka plan */
+  --bg-quiz: #f0f4fc;
+  --bg-res:  #ffffff;
   --card:    #ffffff;
   --r:       14px;
+  /* Kart boyutları — responsive */
+  --card-max:  520px;
+  --card-h:    400px;   /* mobil kart yüksekliği */
+  --row-scale: 116px;
+  --row-nav:   68px;
 }
 
-html,body{
-  width:100%;
+/* Desktop'ta kart daha büyük */
+@media(min-width:640px){
+  :root{
+    --card-max:  620px;
+    --card-h:    460px;
+    --row-scale: 126px;
+    --row-nav:   72px;
+  }
+}
+
+/* ── Sayfa scroll'unu quiz modunda kapat ── */
+html{
+  height:100%;
   font-family:'Inter',sans-serif;
   color:var(--ink);
   -webkit-font-smoothing:antialiased;
 }
 
-/* ═══ QUIZ MODE ═══
-   Üsten hizalı, hiç viewport-height yok
-   Kart tam yukarıda, arka plan dolar
-*/
+/* QUIZ: viewport'u doldur, scroll yok */
+html.quiz-html{ overflow:hidden; }
 body.quiz{
-  background: var(--bg-quiz);
-  min-height: 100%;
-  padding: 18px 14px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  height:100%;
+  overflow:hidden;
+  background:var(--bg-quiz);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:14px 14px 16px;
+  gap:10px;
 }
 
-/* ═══ RESULT MODE ═══ */
+/* RESULT: normal scroll */
+html.result-html{ overflow:auto; }
 body.result{
-  background: var(--bg-res);
-  min-height: 100%;
-  padding: 0;
-  display: block;
+  background:var(--bg-quiz);
+  min-height:100%;
+  padding:20px 14px 36px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  overflow:visible;
 }
 
 /* ════════ PROGRESS ════════ */
 #prog{
   width:100%;
-  max-width:460px;
+  max-width:var(--card-max);
   flex-shrink:0;
 }
 .pmeta{
@@ -81,7 +101,7 @@ body.result{
 /* ════════ QUIZ CARD — FIXED HEIGHT GRID ════════ */
 #card{
   width:100%;
-  max-width:460px;
+  max-width:var(--card-max);
   background:var(--card);
   border-radius:var(--r);
   box-shadow:0 2px 8px rgba(26,31,54,.07),0 8px 28px rgba(26,31,54,.09);
@@ -90,13 +110,12 @@ body.result{
 
 .qgrid{
   display:grid;
-  /* Soru alanı esnek, scale ve nav sabit */
-  grid-template-rows:1fr 98px 62px;
-  height:310px;
+  grid-template-rows:1fr var(--row-scale) var(--row-nav);
+  height:var(--card-h);
 }
 
 .qtop{
-  padding:20px 20px 14px;
+  padding:24px 24px 16px;
   border-bottom:1px solid var(--border);
   display:flex;
   flex-direction:column;
@@ -109,22 +128,22 @@ body.result{
   letter-spacing:.1em;text-transform:uppercase;
   color:var(--blue);background:var(--blue-s);
   padding:3px 10px;border-radius:99px;
-  margin-bottom:10px;width:fit-content;
+  margin-bottom:12px;width:fit-content;
   flex-shrink:0;
 }
 .qtext{
   font-family:'Playfair Display',serif;
-  font-size:clamp(14px,3.5vw,17px);
+  font-size:clamp(16px,3.8vw,20px);
   font-weight:600;line-height:1.45;
   color:var(--ink);
   overflow:hidden;
   display:-webkit-box;
-  -webkit-line-clamp:3;
+  -webkit-line-clamp:4;
   -webkit-box-orient:vertical;
 }
 
 .scalewrap{
-  padding:12px 20px;
+  padding:14px 24px;
   border-bottom:1px solid var(--border);
   display:flex;
   flex-direction:column;
@@ -132,16 +151,16 @@ body.result{
 }
 .scalehint{
   display:flex;justify-content:space-between;
-  font-size:10px;color:var(--muted);font-weight:500;
-  margin-bottom:8px;
+  font-size:10.5px;color:var(--muted);font-weight:500;
+  margin-bottom:10px;
 }
-.scalerow{display:flex;gap:7px;}
+.scalerow{display:flex;gap:8px;}
 .scalerow button{
-  flex:1;height:44px;
-  border-radius:9px;
+  flex:1;height:52px;
+  border-radius:10px;
   border:1.5px solid var(--border);
   background:#fff;
-  font-size:15px;font-weight:700;
+  font-size:17px;font-weight:700;
   font-family:'Inter',sans-serif;
   color:var(--ink2);cursor:pointer;
   transition:all .12s ease;
@@ -158,10 +177,10 @@ body.result{
 
 .nav{
   display:flex;justify-content:space-between;align-items:center;
-  padding:0 18px;height:62px;
+  padding:0 22px;height:var(--row-nav);
 }
 .btnback{
-  font-size:13px;font-weight:500;color:var(--muted);
+  font-size:14px;font-weight:500;color:var(--muted);
   background:none;border:none;cursor:pointer;
   padding:8px 4px;font-family:'Inter',sans-serif;
   transition:color .12s;
@@ -170,11 +189,11 @@ body.result{
 .btnback:hover{color:var(--ink);}
 .btnback:disabled{opacity:.22;cursor:default;}
 .btnnext{
-  font-size:13px;font-weight:700;
+  font-size:14px;font-weight:700;
   font-family:'Inter',sans-serif;
   color:#fff;background:var(--blue);
-  border:none;border-radius:9px;
-  padding:10px 20px;cursor:pointer;
+  border:none;border-radius:10px;
+  padding:12px 24px;cursor:pointer;
   transition:all .12s;
   -webkit-tap-highlight-color:transparent;
   touch-action:manipulation;
@@ -182,14 +201,14 @@ body.result{
 .btnnext:active{transform:scale(.96);}
 
 /* ════════ LOGIN ════════ */
-.loginwrap{padding:26px 22px;}
+.loginwrap{padding:30px 28px 32px;}
 .loginwrap h2{
   font-family:'Playfair Display',serif;
-  font-size:clamp(19px,5vw,23px);font-weight:700;
-  margin-bottom:5px;color:var(--ink);
+  font-size:clamp(20px,5vw,26px);font-weight:700;
+  margin-bottom:6px;color:var(--ink);
 }
 .loginwrap p{
-  font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px;
+  font-size:13.5px;color:var(--muted);line-height:1.65;margin-bottom:24px;
 }
 .field{
   width:100%;padding:11px 13px;
@@ -212,7 +231,12 @@ body.result{
 /* ════════ RESULT ════════ */
 .rcard{
   width:100%;
+  max-width:var(--card-max);
+  margin:0 auto;
   background:var(--card);
+  border-radius:var(--r);
+  box-shadow:0 2px 8px rgba(26,31,54,.07),0 8px 28px rgba(26,31,54,.09);
+  overflow:hidden;
 }
 
 /* Profile strip */
@@ -271,7 +295,8 @@ body.result{
 .zone.on{border-color:currentColor;}
 
 /* Radar */
-.chartbox{height:200px;position:relative;}
+.chartbox{height:240px;position:relative;}
+@media(min-width:640px){.chartbox{height:280px;}}
 
 /* Desc */
 .dcard{
@@ -418,8 +443,11 @@ const pnum=document.getElementById("pnum");
 /* ════════ IFRAME RESIZE ════════ */
 function notifyHeight(){
   try{
-    const h=Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
-    window.parent.postMessage({type:"iframeResize",height:h},"*");
+    // Quiz modunda kart yüksekliği sabittir, result'ta dinamik
+    const h = body.classList.contains("result")
+      ? Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)
+      : document.body.offsetHeight;
+    window.parent.postMessage({type:"iframeResize",height:h+8},"*");
   }catch(e){}
 }
 
@@ -438,12 +466,14 @@ function anim(el,cls){
 }
 
 function quizMode(){
+  document.documentElement.className="quiz-html";
   body.className="quiz";
   prog.style.display="flex";
   setTimeout(notifyHeight,50);
 }
 
 function resultMode(){
+  document.documentElement.className="result-html";
   body.className="result";
   prog.style.display="none";
   setTimeout(notifyHeight,400);
